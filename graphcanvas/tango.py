@@ -203,17 +203,9 @@ def paint_rounded_rect(cr, scheme, bounds, rx, ry, direction):
 
 	cr.new_path()
 
-	# The outer rectangle is dark and 1px thick
-	cr.set_line_width(1.0)
-	cairo_set_source(cr, scheme, DARK)
-	cairoutils.rounded_rect(cr, 
-		boundsutils.inset(int_bounds, 0.5, 0.5), rx, ry)
-	cr.fill_preserve()
-	cr.stroke()
-
 	# The inner part.
-	rect_bounds = boundsutils.inset(int_bounds, 2.0, 2.0)
-	cairoutils.rounded_rect(cr, rect_bounds, rx-1, ry-1)
+	rect_bounds = boundsutils.inset(int_bounds, 1.5, 1.5)
+	cairoutils.rounded_rect(cr, rect_bounds, rx-1.5, ry-1.5)
 
 	linear_blend = cairo.LinearGradient(
 		rect_bounds.x1, rect_bounds.y1, 
@@ -227,6 +219,7 @@ def paint_rounded_rect(cr, scheme, bounds, rx, ry, direction):
 		1.0, scheme, LIGHT, 1.0)
 
 	cr.set_source(linear_blend)
+	cr.set_line_width(0.0)
 	cr.fill_preserve()
 
 	# The inner rectangle is a gradient from light to mid and 2px thick
@@ -245,8 +238,15 @@ def paint_rounded_rect(cr, scheme, bounds, rx, ry, direction):
 		cairo_pattern_add_color_stop(linear_blend,
 			1.0, scheme, LIGHT, 1.0)
 
-	cr.set_line_width(2.0)
+	cr.set_line_width(3.0)
 	cr.set_source(linear_blend)
+	cr.stroke()
+
+	# The outer rectangle is dark and 1px thick
+	cr.set_line_width(1.0)
+	cairo_set_source(cr, scheme, DARK)
+	cairoutils.rounded_rect(cr, 
+		boundsutils.inset(int_bounds, 0.5, 0.5), rx-0.5, ry-0.5)
 	cr.stroke()
 
 	# return the interior bounds

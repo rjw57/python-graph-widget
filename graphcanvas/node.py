@@ -160,6 +160,7 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 			self._drag_y = event.y
 			self._old_x = self.get_property('x')
 			self._old_y = self.get_property('y')
+			self.ensure_updated()
 
 			fleur = gtk.gdk.Cursor (gtk.gdk.FLEUR)
 			canvas = item.get_canvas ()
