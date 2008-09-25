@@ -7,6 +7,7 @@ import gtk
 import tangocanvas
 import cairo
 import math
+import random
 
 class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 	__gproperties__ = {
@@ -19,7 +20,7 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		self._node_data = {
 			'node-title': 'Node',
 		}
-		self._font_size = 18
+		self._font_size = 14
 		self._content_bounds = goocanvas.Bounds()
 
 		# Initialise the remaining parts of the item
@@ -126,9 +127,11 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 
 		node_bounds = boundsutils.align_to_integer_boundary( \
 			self.get_bounds())
-		content_bounds = self.get_content_area_bounds()
 
-		#cairoutils.rounded_rect(cr, content_bounds, 7, 7)
+		content_bounds = boundsutils.inset( \
+			self.get_content_area_bounds(), 2.0, 2.0)
+
+		#cairoutils.rounded_rect(cr, content_bounds, 0, 0)
 		#cr.set_source_rgba(1,1,1,0.25)
 		#cr.fill()
 
@@ -155,7 +158,7 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		return True
 	
 	def _on_button_press(self, item, target, event):
-		if(event.button == 1):
+		if(event.button == 1): # left button
 			self._drag_x = event.x
 			self._drag_y = event.y
 			self._old_x = self.get_property('x')
@@ -169,10 +172,15 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 					gtk.gdk.BUTTON_RELEASE_MASK,
 				fleur, event.time)
 			self._dragging = True
-		elif event.button == 2:
-			item.lower(None)
-		elif event.button == 3:
-			item.raise_(None)
+		elif event.button == 3: # right button
+			if(self.get_model() != None):
+				scheme = random.choice(tango.get_scheme_names())
+				print('Switch to: %s' % scheme)
+				self.get_model().set_property('color-scheme', scheme)
+
+			#item.lower(None)
+#		elif event.button == 3:
+			#item.raise_(None)
 		return True
 
 	def _on_button_release(self, item, target, event):
