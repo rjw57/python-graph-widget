@@ -41,7 +41,7 @@ class App:
 		box.pack_start(scrolled_win, True, True)
 
 		new_node = graphcanvas.NodeModel(
-			color_scheme = 'Plum',
+			color_scheme = 'Dark Aluminium',
 			node_title = 'Filter Element',
 			parent = graph_model,
 			x = 20, y = 50,

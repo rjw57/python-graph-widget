@@ -33,9 +33,13 @@ def get_color_int_rgb(scheme, shade):
 	if(shade > DARK):
 		flag = _tango_palette[scheme][3][shade - LIGHT_CONTRAST]
 		if(flag == 1):
-			return (238,238,236)
+			c = get_color_int_rgb(scheme, LIGHT)
+			return (int(0.5*(c[0]+255)), int(0.5*(c[1]+255)),
+				int(0.5*(c[2]+255)))
 		else:
-			return (46,52,54)
+			c = get_color_int_rgb(scheme, DARK)
+			return (int(0.5*(c[0]+0)), int(0.5*(c[1]+0)),
+				int(0.5*(c[2]+0)))
 	return _tango_palette[scheme][shade]
 
 def get_color_float_rgb(scheme, shade):
