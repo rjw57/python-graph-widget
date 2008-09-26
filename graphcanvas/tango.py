@@ -110,7 +110,7 @@ def pad_extents(x, y, orientation, size):
 	''' Returns the extent of the pad
 		as a tuple (minx, miny, maxx, maxy). '''
 	radius = size * 0.5
-	extent = math.ceil(0.62 * radius) # Golden ratio
+	extent = math.ceil(0.62 * radius) + 0.5 # Golden ratio
 
 	if(orientation == RIGHT):
 		return (x - extent, y - radius, x, y + radius)
@@ -127,7 +127,7 @@ def pad_boundary_curve(cr, x, y, orientation, size):
 	''' Set the current Cairo curve to the boundary of the
 		specified pad. '''
 	radius = size * 0.5
-	extent = math.ceil(0.62 * radius) # Golden ratio
+	extent = math.ceil(0.62 * radius) + 0.5 # Golden ratio
 
 	if(orientation == RIGHT):
 		cx = x - extent
@@ -154,7 +154,7 @@ def paint_pad(cr, scheme, x, y, orientation, size, *args):
 		highlighted (default: False).'''
 
 	radius = size * 0.5
-	extent = math.ceil(0.62 * radius) # Golden ratio
+	extent = math.ceil(0.62 * radius) + 0.5 # Golden ratio
 
 	highlight = False
 	if(len(args) > 0):
