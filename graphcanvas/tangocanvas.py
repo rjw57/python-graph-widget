@@ -3,8 +3,9 @@ import boundsutils
 import cairoutils
 import goocanvas
 import gobject
+import simple
 
-class TangoRectItem(goocanvas.Rect, goocanvas.Item):
+class TangoRectItem(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 	__gproperties__ = {
 		'color-scheme':	(str, None, None, 'Plum',
 			gobject.PARAM_READWRITE),
@@ -56,17 +57,18 @@ class TangoRectItem(goocanvas.Rect, goocanvas.Item):
 		self._data = model._data
 
 	def do_simple_is_item_at(self, x, y, cr, is_pointer_event):
-		return True
+		return simple.SimpleItem.do_simple_is_item_at(
+			self, x, y, cr, is_pointer_event)
 
-	def do_simple_update(self, cr):
-		my_bounds = boundsutils.from_rect( \
-			self.get_properties('x', 'y', 'width', 'height'))
-
-		# Update the simple item's bounds
-		self.bounds_x1 = my_bounds.x1
-		self.bounds_y1 = my_bounds.y1
-		self.bounds_x2 = my_bounds.x2
-		self.bounds_y2 = my_bounds.y2
+#	def do_simple_update(self, cr):
+#		my_bounds = boundsutils.from_rect( \
+#			self.get_properties('x', 'y', 'width', 'height'))
+#
+#		# Update the simple item's bounds
+#		self.bounds_x1 = my_bounds.x1
+#		self.bounds_y1 = my_bounds.y1
+#		self.bounds_x2 = my_bounds.x2
+#		self.bounds_y2 = my_bounds.y2
 
 	def do_simple_create_path(self, cr):
 		# For hit testing

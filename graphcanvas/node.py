@@ -20,11 +20,21 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		self._node_data = {
 			'node-title': 'Node',
 		}
-		self._font_size = 14
+		self._font_size = 18
 		self._content_bounds = goocanvas.Bounds()
+		self._children = []
+
+		# HACK
+		# Flag to prevent recursion in do_simple_is_item_at
+		self._group_hack = False
 
 		# Initialise the remaining parts of the item
 		tangocanvas.TangoRectItem.__init__(self, *args, **kwargs)
+
+		# Add a resize gadget item child
+		self._resize_gadget = goocanvas.Rect( parent = self,
+			fill_color = 'red',
+			x = 100, y = 100, width = 300, height = 300)
 
 	def get_node_title(self):
 		return self.get_property('node-title')
@@ -34,6 +44,24 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 
 	def get_content_area_bounds(self):
 		return self._content_bounds
+	
+	def _update_children(self, cr):
+		''' Internal method to update all the children. '''
+
+		content_rect = self.get_content_area_bounds()
+
+		# Put the resize gadget in the lower-right
+		resize_size = 50
+		self._resize_gadget.set_property('x',
+			content_rect.x2 - resize_size)
+		self._resize_gadget.set_property('y',
+			content_rect.y2 - resize_size)
+		self._resize_gadget.set_property('width', resize_size)
+		self._resize_gadget.set_property('height', resize_size)
+
+		for child in self._children:
+			child_bounds = goocanvas.Bounds()
+			child.update(True, cr, child_bounds)
 
 	## gobject methods
 	def do_get_property(self, pspec):
@@ -49,6 +77,39 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		else:
 			tangocanvas.TangoRectItem.do_set_property(self, pspec, value)
 	
+	## group item methods
+	def do_set_canvas(self, canvas):
+		if(canvas == None):
+			return
+
+		tangocanvas.TangoRectItem.do_set_canvas(self, canvas)
+
+		for child in self._children:
+			child.set_canvas(self.get_canvas())
+
+	def do_get_n_children(self):
+		return len(self._children)
+	
+	def do_get_child(self, pos):
+		return self._children[pos]
+		
+	def do_add_child(self, child, pos):
+		if(pos == -1):
+			self._children.append(child)
+		else:
+			self._children.insert(pos, child)
+
+		child.set_parent(self)
+		if(self.get_canvas() != None):
+			child.set_canvas(self.get_canvas())
+	
+	def do_move_child(self, oldpos, newpos):
+		child = self._children.pop(oldpos)
+		self.do_add_child(child, newpos)
+		
+	def do_remove_child(self, child, pos):
+		self._children.pop(pos)
+	
 	## simple item methods
 	def set_model(self, model):
 		tangocanvas.TangoRectItem.set_model(self, model)
@@ -62,7 +123,24 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		self.connect("button_release_event", self._on_button_release)
 
 	def do_simple_is_item_at(self, x, y, cr, is_pointer_event):
-		return True
+		if(self._group_hack):
+			return False
+
+		self._group_hack = True
+		for child in self._children:
+			child_bounds = child.get_bounds()
+			if(not boundsutils.contains_point(child_bounds, x, y)):
+				continue
+
+			items = child.get_items_at(x,y,cr,is_pointer_event,True)
+			if((items != None) and (len(items) > 0)):
+				self._group_hack = False
+				return False
+
+		self._group_hack = False
+
+		return tangocanvas.TangoRectItem.do_simple_is_item_at(self, x, y,
+			cr, is_pointer_event)
 
 	def do_simple_update(self, cr):
 		tangocanvas.TangoRectItem.do_simple_update(self, cr)
@@ -74,7 +152,7 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		cr.set_font_size(self._font_size)
 		extents = cr.text_extents(self.get_node_title())
 		font_height = math.ceil(extents[3])
-		font_padding = math.ceil(0.62 * font_height) # golden ratio
+		font_padding = math.ceil(0.5 * font_height)
 
 		y = int_bounds.y1 + font_height + font_padding
 		y += font_padding + 1.5
@@ -83,6 +161,9 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		self._content_bounds = goocanvas.Bounds(
 			int_bounds.x1, y,
 			int_bounds.x2, int_bounds.y2)
+
+		# Recalculate the children's positions
+		self._update_children(cr)
 
 	def do_simple_create_path(self, cr):
 		tangocanvas.TangoRectItem.do_simple_create_path(self, cr)
@@ -102,7 +183,7 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		# Draw the node title
 		extents = cr.text_extents(self.get_node_title())
 		font_height = math.ceil(extents[3])
-		font_padding = math.ceil(0.62 * font_height) # golden ratio
+		font_padding = math.ceil(0.5 * font_height)
 
 		y = int_bounds.y1 + font_height + font_padding
 		cr.move_to( \
@@ -143,6 +224,10 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 
 		tango.paint_pad(cr, scheme, node_bounds.x2, 
 			content_bounds.y1 + 80.5, tango.RIGHT, 15)
+
+		# Draw the child elements
+		for child in self._children:
+			child.paint(cr, bounds, 1.0)
 
 
 	## event handlers
