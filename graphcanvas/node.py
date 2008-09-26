@@ -171,6 +171,11 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 	def do_simple_paint(self, cr, bounds):
 		tangocanvas.TangoRectItem.do_simple_paint(self, cr, bounds)
 
+		# HACK: This should be automagic
+		c = tango.get_color_float_rgb(
+			self.get_color_scheme(), tango.LIGHT_CONTRAST)
+		self._resize_gadget.set_color( ( c[0], c[1], c[2], 0.5 ) )
+
 		scheme = self.get_color_scheme()
 
 		# Add our own decoration
