@@ -8,6 +8,7 @@ import tangocanvas
 import cairo
 import math
 import random
+import resizegadget
 
 class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 	__gproperties__ = {
@@ -32,8 +33,7 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		tangocanvas.TangoRectItem.__init__(self, *args, **kwargs)
 
 		# Add a resize gadget item child
-		self._resize_gadget = goocanvas.Rect( parent = self,
-			fill_color = 'red',
+		self._resize_gadget = resizegadget.ResizeGadget( parent = self,
 			x = 100, y = 100, width = 300, height = 300)
 
 	def get_node_title(self):
@@ -51,11 +51,11 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 		content_rect = self.get_content_area_bounds()
 
 		# Put the resize gadget in the lower-right
-		resize_size = 50
+		resize_size = 15
 		self._resize_gadget.set_property('x',
-			content_rect.x2 - resize_size)
+			content_rect.x2 - resize_size - 1)
 		self._resize_gadget.set_property('y',
-			content_rect.y2 - resize_size)
+			content_rect.y2 - resize_size - 1)
 		self._resize_gadget.set_property('width', resize_size)
 		self._resize_gadget.set_property('height', resize_size)
 
