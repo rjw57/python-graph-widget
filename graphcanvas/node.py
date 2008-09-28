@@ -22,7 +22,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			'color-scheme': 'Plum',
 		}
 
-		self._background_rect = NodeItemFrame( parent = self )
+		self._background_rect = NodeItemFrame( parent = self, x = 0.0, y = 0.0 )
 
 		# make the background item draggable
 		self._dragging_frame = False
@@ -36,7 +36,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		# Add a resize gadget item child
 		self._dragging_resize_gadget = False
 		self._resize_gadget = resizegadget.ResizeGadget( parent = self,
-			orientation = resizegadget.SE)
+			orientation = resizegadget.SE, x = 0.0, y = 0.0 )
 		self._resize_gadget.connect("motion_notify_event", 
 			self._on_resize_gadget_motion_notify)
 		self._resize_gadget.connect("button_press_event", 
@@ -46,16 +46,20 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._resize_gadget_size = 15
 	
 	def _update_children(self):
-		propnames = ('x', 'y', 'width', 'height', 'radius-x', 
-			'radius-y', 'color-scheme')
+		bounds = self.get_bounds()
+
+		propnames = ('width', 'height', 'radius-x', 'radius-y', 'color-scheme')
 		for name in propnames:
 			self._background_rect.set_property(name, self._node_data[name])
+
 		self._background_rect.ensure_updated()
 
 		content_rect = self._background_rect.get_content_area_bounds()
+		#content_rect = goocanvas.Bounds(2,2,
+		#	bounds.x2-bounds.x1-2,bounds.y2-bounds.y1-2)
 
 		# Put the resize gadget in the lower-right
-		self._resize_gadget.set_property('x', 
+		self._resize_gadget.set_property('x',
 			content_rect.x2 - self._resize_gadget_size - 1)
 		self._resize_gadget.set_property('y',
 			content_rect.y2 - self._resize_gadget_size - 1)
@@ -65,24 +69,26 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			tango.LIGHT_CONTRAST)
 		self._resize_gadget.set_color( ( c[0], c[1], c[2], 0.5 ) )
 
-		self._resize_gadget.ensure_updated()
+		for child_idx in range(self.get_n_children()):
+			child = self.get_child(child_idx)
+			child.set_simple_transform(self._node_data['x'], self._node_data['y'],
+				1.0, 0.0)
+			child.ensure_updated()
 
 	## event handlers
 	def _on_frame_motion_notify(self, item, target, event):
 		if((self._dragging_frame == True) and 
 		   (event.state & gtk.gdk.BUTTON1_MASK)):
-			new_x = event.x
-			new_y = event.y
-			self.get_model().set_property('x', self._old_x + new_x - self._drag_x)
-			self.get_model().set_property('y', self._old_y + new_y - self._drag_y)
+			new_x = event.x + self._node_data['x']
+			new_y = event.y + self._node_data['y']
+			self.get_model().set_property('x', new_x - self._drag_x)
+			self.get_model().set_property('y', new_y - self._drag_y)
 		return True
 	
 	def _on_frame_button_press(self, item, target, event):
 		if(event.button == 1): # left button
 			self._drag_x = event.x
 			self._drag_y = event.y
-			self._old_x = self._node_data['x']
-			self._old_y = self._node_data['y']
 			self.ensure_updated()
 
 			fleur = gtk.gdk.Cursor (gtk.gdk.FLEUR)
@@ -274,14 +280,14 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 		content_bounds = boundsutils.inset( \
 			self.get_content_area_bounds(), 2.0, 2.0)
 
-		tango.paint_pad(cr, scheme, node_bounds.x2, 
-			content_bounds.y1 + 20.5, tango.RIGHT, 15, True)
-
-		tango.paint_pad(cr, scheme, node_bounds.x2, 
-			content_bounds.y1 + 50.5, tango.RIGHT, 15)
-
-		tango.paint_pad(cr, scheme, node_bounds.x2, 
-			content_bounds.y1 + 80.5, tango.RIGHT, 15)
+#		tango.paint_pad(cr, scheme, node_bounds.x2, 
+#			content_bounds.y1 + 20.5, tango.RIGHT, 15, True)
+#
+#		tango.paint_pad(cr, scheme, node_bounds.x2, 
+#			content_bounds.y1 + 50.5, tango.RIGHT, 15)
+#
+#		tango.paint_pad(cr, scheme, node_bounds.x2, 
+#			content_bounds.y1 + 80.5, tango.RIGHT, 15)
 
 gobject.type_register(NodeItemFrame)
 

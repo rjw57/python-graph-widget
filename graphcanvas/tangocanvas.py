@@ -18,13 +18,22 @@ class TangoRectItem(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		}
 		goocanvas.Rect.__init__(self, *args, **kwargs)
 	
+	def _get_internal_bounds(self):
+		internal_bounds = boundsutils.align_to_integer_boundary( \
+			goocanvas.Bounds(
+				self.get_property('x'),
+				self.get_property('y'),
+				self.get_property('x') + self.get_property('width'),
+				self.get_property('y') + self.get_property('height')))
+		return internal_bounds
+	
 	def get_interior_bounds(self):
-		''' Return the bounds of the rectangle's interior. '''
+		''' Return the bounds of the rectangle's interior in the
+			item's logal space. '''
 
-		int_bounds = boundsutils.align_to_integer_boundary( \
-			self.get_bounds())
+		internal_bounds = self._get_internal_bounds()
 
-		return boundsutils.inset(int_bounds, 3.0, 3.0)
+		return boundsutils.inset(internal_bounds, 3.0, 3.0)
 	
 	def get_color_scheme(self):
 		return self.get_property('color-scheme')
@@ -60,29 +69,21 @@ class TangoRectItem(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		return simple.SimpleItem.do_simple_is_item_at(
 			self, x, y, cr, is_pointer_event)
 
-#	def do_simple_update(self, cr):
-#		my_bounds = boundsutils.from_rect( \
-#			self.get_properties('x', 'y', 'width', 'height'))
-#
-#		# Update the simple item's bounds
-#		self.bounds_x1 = my_bounds.x1
-#		self.bounds_y1 = my_bounds.y1
-#		self.bounds_x2 = my_bounds.x2
-#		self.bounds_y2 = my_bounds.y2
-
 	def do_simple_create_path(self, cr):
 		# For hit testing
 		(rx, ry) = self.get_properties('radius-x', 'radius-y')
-		cairoutils.rounded_rect(cr, self.get_bounds(), rx, ry)
+		cairoutils.rounded_rect(cr, self._get_internal_bounds(), rx, ry)
 	
 	def do_simple_paint(self, cr, bounds):
-		my_bounds = self.get_bounds()
+		my_bounds = self._get_internal_bounds()
 		if(not boundsutils.do_intersect(my_bounds, bounds)):
 			return
 
+		internal_bounds = self._get_internal_bounds()
+
 		(rx, ry) = self.get_properties('radius-x', 'radius-y')
 		tango.paint_rounded_rect(cr, self.get_color_scheme(),
-			my_bounds, rx, ry, tango.IN)
+			internal_bounds, rx, ry, tango.IN)
 
 gobject.type_register(TangoRectItem)
 

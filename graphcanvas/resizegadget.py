@@ -21,6 +21,15 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 
 		goocanvas.Rect.__init__(self, *args, **kwargs)
 	
+	def _get_internal_bounds(self):
+		internal_bounds = boundsutils.align_to_integer_boundary( \
+			goocanvas.Bounds(
+				self.get_property('x'),
+				self.get_property('y'),
+				self.get_property('x') + self.get_property('width'),
+				self.get_property('y') + self.get_property('height')))
+		return internal_bounds
+	
 	def get_color(self):
 		return self._color
 	
@@ -57,10 +66,10 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 
 	def do_simple_create_path(self, cr):
 		# For hit testing
-		cairoutils.rounded_rect(cr, self.get_bounds(), 0, 0)
+		cairoutils.rounded_rect(cr, self._get_internal_bounds(), 0, 0)
 	
 	def do_simple_paint(self, cr, bounds):
-		my_bounds = self.get_bounds()
+		my_bounds = self._get_internal_bounds()
 		if(not boundsutils.do_intersect(my_bounds, bounds)):
 			return
 
