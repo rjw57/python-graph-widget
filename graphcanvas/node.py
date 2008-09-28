@@ -74,6 +74,11 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			self._pad_gadgets.append(pad_gadget)
 			self._pad_table.set_child_properties(pad_gadget, \
 				row = i, column = 1)
+
+		foo = gtk.Button('Hello')
+		foo_item = goocanvas.Widget(parent = self._pad_table, widget = foo)
+		self._pad_table.set_child_properties(foo_item, row = 4, column = 0,
+			columns = 2, x_fill = True)
 	
 	def do_update(self, entire_tree, cr):
 		## find the minimum width and height for the node frame.
