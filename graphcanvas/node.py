@@ -17,6 +17,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	def __init__(self, *args, **kwargs):
 		goocanvas.Group.__init__(self, *args, **kwargs)
 
+		## a flag for indicating if we need an update
+		self._needs_update = False
+
 		self._node_data = {
 			'node-title': 'Node',
 			'x': 0.0, 'y': 0.0, 'width': 100.0, 'height': 100.0,
@@ -70,7 +73,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			pad_gadget = padgadget.PadGadget(parent=self._pad_table, 
 				x=0.0, y=0.0, width=20.0, height=self._default_pad_size,
 				pad_size=self._default_pad_size,
-				fill_color = 'red', line_width = 0.0)
+				pointer_events = goocanvas.EVENTS_ALL)
 			self._pad_gadgets.append(pad_gadget)
 			self._pad_table.set_child_properties(pad_gadget, \
 				row = i, column = 1)
@@ -81,6 +84,11 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			columns = 2, x_fill = True)
 	
 	def do_update(self, entire_tree, cr):
+		if(not self._needs_update):
+			out_bounds = goocanvas.Bounds()
+			goocanvas.Group.do_update(self, True, cr, out_bounds)
+			return out_bounds
+
 		## find the minimum width and height for the node frame.
 		minimum_bounds = self._background_rect. \
 			get_bounds_for_desired_content_bounds(cr, goocanvas.Bounds(0,0,0,0))
@@ -157,7 +165,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			gadget.set_color_scheme( self._node_data['color-scheme'] )
 
 		out_bounds = goocanvas.Bounds()
-		goocanvas.Group.do_update(self, entire_tree, cr, out_bounds)
+		goocanvas.Group.do_update(self,	True, cr, out_bounds)
+
+		self._needs_update = False
 		return out_bounds
 
 	## event handlers
@@ -236,6 +246,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._dragging_resize_gadget = False
 
 	def _on_model_changed(self, model, recompute_bounds):
+		self._needs_update = True
 		self.request_update()
 	
 	## simple item methods

@@ -12,43 +12,54 @@ import os
 import math
 
 import graphcanvas
+from graphcanvas import tangocanvas
 
 class App:
 	def clearup(self):
 		pass
 
-	def __init__(self, glade):
-		graph_model = goocanvas.GroupModel()
+	def _button_press(self, target, event):
+		if(event.button == 2): ## middle
+			self.new_node(event.x, event.y)
 
+	def new_node(self, x, y):
+		new_node = graphcanvas.NodeModel(
+		#new_node = tangocanvas.TangoRectModel(
+			color_scheme = 'Dark Aluminium',
+			parent = self._model,
+			x = x, y = y,
+			radius_x = 9, radius_y = 9,
+			width = 300, height = 200)
+	
+	def new_canvas(self, graph_model):
 		bg_color = 0xBABDB6
-
-		scrolled_win = gtk.ScrolledWindow()
 		graph_widget = goocanvas.Canvas()
 		graph_widget.set_property('background-color-rgb', bg_color)
 		graph_widget.set_property('automatic-bounds', True)
 		graph_widget.set_property('integer-layout', True)
 		graph_widget.set_root_item_model(graph_model)
+
+		graph_widget.connect('button-release-event', self._button_press)
+
+		return graph_widget
+
+	def __init__(self, glade):
+		graph_model = goocanvas.GroupModel()
+		self._model = graph_model
+
+		scrolled_win = gtk.ScrolledWindow()
+		graph_widget = self.new_canvas(graph_model)
 		scrolled_win.add(graph_widget)
 		box = glade.get_widget('lbox')
 		box.pack_start(scrolled_win, True, True)
 
 		scrolled_win = gtk.ScrolledWindow()
-		graph_widget = goocanvas.Canvas()
-		graph_widget.set_property('background-color-rgb', bg_color)
-		graph_widget.set_property('automatic-bounds', True)
-		graph_widget.set_property('integer-layout', True)
-		graph_widget.set_root_item_model(graph_model)
+		graph_widget = self.new_canvas(graph_model)
 		scrolled_win.add(graph_widget)
 		box = glade.get_widget('rbox')
 		box.pack_start(scrolled_win, True, True)
-
-		new_node = graphcanvas.NodeModel(
-			color_scheme = 'Dark Aluminium',
-			node_title = 'Filter Element',
-			parent = graph_model,
-			x = 20, y = 50,
-			radius_x = 9, radius_y = 9,
-			width = 300, height = 200)
+	
+		self.new_node(10, 10)
 	
 	def on_main_window_delete_event(self, widget, event):
 		gtk.main_quit()
