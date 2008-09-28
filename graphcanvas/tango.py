@@ -42,6 +42,9 @@ def get_color_int_rgb(scheme, shade):
 				int(0.5*(c[2]+0)))
 	return _tango_palette[scheme][shade]
 
+def get_color_hex_string_rgb(scheme, shade):
+	return '#%02x%02x%02x' % get_color_int_rgb(scheme, shade)
+
 def get_color_float_rgb(scheme, shade):
 	int_rgb = get_color_int_rgb(scheme, shade)
 	return (int_rgb[0]/255.0, int_rgb[1]/255.0, int_rgb[2]/255.0)

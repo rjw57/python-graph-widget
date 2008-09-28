@@ -10,6 +10,8 @@ import math
 import random
 import resizegadget
 import simple
+import pango
+import padgadget
 
 class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	def __init__(self, *args, **kwargs):
@@ -22,7 +24,8 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			'color-scheme': 'Plum',
 		}
 
-		self._background_rect = NodeItemFrame( parent = self, x = 0.0, y = 0.0 )
+		self._background_rect = NodeItemFrame( parent = self, x = 0.0, y = 0.0,
+			width = 200.0, height = 30.0)
 
 		# make the background item draggable
 		self._dragging_frame = False
@@ -44,47 +47,109 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._resize_gadget.connect("button_release_event",
 			self._on_resize_gadget_button_release)
 		self._resize_gadget_size = 15
+
+		self._pad_table = goocanvas.Table(parent = self,
+			row_spacing = 4.0)
+		self._pad_labels = []
+		self._pad_gadgets = []
+		self._default_pad_size = 13.0
+		for i in range(4):
+			pad_label = goocanvas.Text(parent=self._pad_table, 
+				text='Very Long Pad Label %i' % i,
+				alignment=pango.ALIGN_RIGHT,
+				pointer_events=goocanvas.EVENTS_NONE,
+				ellipsize=pango.ELLIPSIZE_START,
+				font='Sans 12',
+				fill_color = 'blue',
+				x=0.0, y=0.0)
+			self._pad_labels.append(pad_label)
+			self._pad_table.set_child_properties(pad_label, \
+				row = i, column = 0, x_expand = True, x_fill = True,
+				left_padding = 4.0,
+				x_shrink = True)
+			pad_gadget = padgadget.PadGadget(parent=self._pad_table, 
+				x=0.0, y=0.0, width=20.0, height=self._default_pad_size,
+				pad_size=self._default_pad_size,
+				fill_color = 'red', line_width = 0.0)
+			self._pad_gadgets.append(pad_gadget)
+			self._pad_table.set_child_properties(pad_gadget, \
+				row = i, column = 1)
 	
 	def do_update(self, entire_tree, cr):
-		# Get the requested node area
-		content_bounds_req = goocanvas.Bounds(1,1,2,2)
-		request_area = self._background_rect.get_bounds_for_desired_content_bounds( \
-			cr, content_bounds_req)
+		## find the minimum width and height for the node frame.
+		minimum_bounds = self._background_rect. \
+			get_bounds_for_desired_content_bounds(cr, goocanvas.Bounds(0,0,0,0))
+		(minimum_width, minimum_height) = boundsutils.get_size(minimum_bounds)
 
-		self._node_data['width'] = max(self._node_data['width'],
-			request_area.x2 - request_area.x1)
-		self._node_data['height'] = max(self._node_data['height'],
-			request_area.y2 - request_area.y1)
+		## update the requested width and height.
+		self._node_data['width'] = max(self._node_data['width'], minimum_width)
+		self._node_data['height'] = max(self._node_data['height'], minimum_height)
 
-		propnames = ('width', 'height', 'radius-x', 'radius-y', 'color-scheme',
-			'node-title')
+		## attempt to set the width and height of the pad table to automatic
+		content_rect = self._background_rect.get_content_area_bounds()
+		self._pad_table.set_property('width', -1)
+		self._pad_table.set_property('height', -1)
+		self._pad_table.update(entire_tree, cr, goocanvas.Bounds())
+
+		## get the requested bounds of the pad table
+		pad_req = goocanvas.Bounds()
+		self._pad_table.get_requested_area(cr, pad_req)
+
+		## update the minimum bounds
+		minimum_bounds = self._background_rect. \
+			get_bounds_for_desired_content_bounds(cr, pad_req)
+		(minimum_width, minimum_height) = boundsutils.get_size(minimum_bounds)
+
+		## add in the resize gadget and the vertical padding
+		vertical_padding = 6.0
+		minimum_height += self._resize_gadget_size + 2.0*vertical_padding
+
+		## update the requested width and height ignoring the minimum width
+		## because the pads ellipsize.
+		# self._node_data['width'] = max(self._node_data['width'], minimum_width)
+		self._node_data['height'] = max(self._node_data['height'], minimum_height)
+
+		## update all the properties for the background.
+		propnames = ('width', 'height', 'radius-x',
+			'radius-y', 'color-scheme', 'node-title')
 		for name in propnames:
 			self._background_rect.set_property(name, self._node_data[name])
 
-		self._background_rect.ensure_updated()
+		## update the translation of each child
+		for child_idx in range(self.get_n_children()):
+			child = self.get_child(child_idx)
+			child.set_simple_transform( self._node_data['x'],
+				self._node_data['y'], 1.0, 0.0 )
+			child.update(entire_tree, cr, goocanvas.Bounds())
 
+		## get the bounds of the content area
 		content_rect = self._background_rect.get_content_area_bounds()
-		content_rect = goocanvas.Bounds(2,2,
-			self._node_data['width'] - 4.0, 
-			self._node_data['height'] - 4.0)
 
-		# Put the resize gadget in the lower-right
-		self._resize_gadget.set_property('x',
-			content_rect.x2 - self._resize_gadget_size - 1)
-		self._resize_gadget.set_property('y',
+		## update the position and size of the pad table. It extends
+		## horizontally to the edge of the item.
+		self._pad_table.translate(0.0, content_rect.y1 + vertical_padding)
+		self._pad_table.set_property('width', self._node_data['width'])
+		self._pad_table.set_property('height', content_rect.y2 - content_rect.y1)
+		self._pad_table.update(entire_tree, cr, goocanvas.Bounds())
+
+		## Put the resize gadget in the lower-right
+		self._resize_gadget.translate(
+			content_rect.x2 - self._resize_gadget_size - 1,
 			content_rect.y2 - self._resize_gadget_size - 1)
 		self._resize_gadget.set_property('width', self._resize_gadget_size)
 		self._resize_gadget.set_property('height', self._resize_gadget_size)
 		c = tango.get_color_float_rgb( self._node_data['color-scheme'],
 			tango.LIGHT_CONTRAST)
 		self._resize_gadget.set_color( ( c[0], c[1], c[2], 0.5 ) )
-		self._resize_gadget.ensure_updated()
 
-		for child_idx in range(self.get_n_children()):
-			child = self.get_child(child_idx)
-			child.set_simple_transform(self._node_data['x'], self._node_data['y'],
-				1.0, 0.0)
-			child.ensure_updated()
+		## update the fill colour of each pad label
+		label_color = tango.get_color_hex_string_rgb( self._node_data['color-scheme'],
+			tango.MEDIUM_CONTRAST)
+		for label in self._pad_labels:
+			label.set_property('fill_color', label_color)
+
+		for gadget in self._pad_gadgets:
+			gadget.set_color_scheme( self._node_data['color-scheme'] )
 
 		out_bounds = goocanvas.Bounds()
 		goocanvas.Group.do_update(self, entire_tree, cr, out_bounds)
@@ -94,18 +159,22 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	def _on_frame_motion_notify(self, item, target, event):
 		if((self._dragging_frame == True) and 
 		   (event.state & gtk.gdk.BUTTON1_MASK)):
-			new_x = event.x + self._node_data['x']
-			new_y = event.y + self._node_data['y']
-			self.get_model().set_property('x', new_x - self._drag_x)
-			self.get_model().set_property('y', new_y - self._drag_y)
+		   	event_point = self.get_canvas().\
+				convert_from_item_space(self._resize_gadget, event.x, event.y)
+			delta_x = event_point[0] - self._drag_point[0]
+			delta_y = event_point[1] - self._drag_point[1]
+			new_x = self._old_loc[0] + delta_x
+			new_y = self._old_loc[1] + delta_y
+			self.get_model().set_property('x', new_x)
+			self.get_model().set_property('y', new_y)
+			self.ensure_updated()
 		return True
 	
 	def _on_frame_button_press(self, item, target, event):
 		if(event.button == 1): # left button
-			self._drag_x = event.x
-			self._drag_y = event.y
-			self.ensure_updated()
-
+			self._drag_point = self.get_canvas().\
+				convert_from_item_space(self._resize_gadget, event.x, event.y)
+			self._old_loc = ( self._node_data['x'], self._node_data['y'] )
 			fleur = gtk.gdk.Cursor (gtk.gdk.FLEUR)
 			canvas = item.get_canvas ()
 			canvas.pointer_grab(item,
@@ -129,12 +198,14 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	def _on_resize_gadget_motion_notify(self, item, target, event):
 		if((self._dragging_resize_gadget == True) and 
 		   (event.state & gtk.gdk.BUTTON1_MASK)):
-			new_x = event.x
-			new_y = event.y
+		   	event_point = self.get_canvas().\
+				convert_from_item_space(self._resize_gadget, event.x, event.y)
+			delta_x = event_point[0] - self._drag_point[0]
+			delta_y = event_point[1] - self._drag_point[1]
 			new_width = max(self._resize_gadget_size,
-				self._old_width + new_x - self._drag_x)
+				self._old_size[0] + delta_x)
 			new_height = max(self._resize_gadget_size,
-				self._old_height + new_y - self._drag_y)
+				self._old_size[1] + delta_y)
 			self.get_model().set_property('width', new_width)
 			self.get_model().set_property('height', new_height)
 			self.ensure_updated()
@@ -142,12 +213,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	
 	def _on_resize_gadget_button_press(self, item, target, event):
 		if(event.button == 1): # left button
-			self._drag_x = event.x
-			self._drag_y = event.y
-			self._old_width = self._node_data['width']
-			self._old_height = self._node_data['height']
-			self.ensure_updated()
-
+			self._drag_point = self.get_canvas().\
+				convert_from_item_space(self._resize_gadget, event.x, event.y)
+			self._old_size = ( self._node_data['width'], self._node_data['height'] )
 			fleur = gtk.gdk.Cursor (gtk.gdk.BOTTOM_RIGHT_CORNER)
 			canvas = item.get_canvas ()
 			canvas.pointer_grab(item,
@@ -218,9 +286,9 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 		bounds = goocanvas.Bounds()
 		bounds.x1 = content_bounds.x1 - 3.0
 		bounds.y1 = content_bounds.y1 - 3.0 - y
-		width = max(content_bounds.x2-content_bounds.x1, font_width + 10.0)
-		bounds.x2 = bounds.x1 + width + 3.0
-		bounds.y2 = bounds.y2 + 5.0
+		width = max(content_bounds.x2-content_bounds.x1, font_width + 20.0)
+		bounds.x2 = bounds.x1 + width + 6.0
+		bounds.y2 = content_bounds.y2 + 3.0
 		return bounds
 	
 	## gobject methods
@@ -253,6 +321,7 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 
 		# Calculate the content area bounds
 		int_bounds = self.get_interior_bounds()
+		ext_bounds = self.get_bounds()
 		cr.select_font_face('Sans', cairo.FONT_SLANT_NORMAL,
 			cairo.FONT_WEIGHT_BOLD)
 		cr.set_font_size(self._font_size)

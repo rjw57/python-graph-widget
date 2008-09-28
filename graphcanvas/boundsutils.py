@@ -63,7 +63,7 @@ def to_rect(bounds):
 	return (bounds.x1, bounds.y1, bounds.x2-bounds.x1, bounds.y2-bounds.y1)
 
 def get_size(bounds):
-	return (bounds.x2-bounds.x1, bounds.y2-bounds.y2)
+	return (bounds.x2-bounds.x1, bounds.y2-bounds.y1)
 
 def contains_point(bounds, x, y):
 	return ((bounds.x1 <= x) and (bounds.x2 >= x) and
