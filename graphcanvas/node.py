@@ -34,7 +34,8 @@ class NodeItem(tangocanvas.TangoRectItem, goocanvas.Item):
 
 		# Add a resize gadget item child
 		self._resize_gadget = resizegadget.ResizeGadget( parent = self,
-			x = 100, y = 100, width = 300, height = 300)
+			x = 100, y = 100, width = 300, height = 300,
+			orientation = resizegadget.SE)
 
 	def get_node_title(self):
 		return self.get_property('node-title')
