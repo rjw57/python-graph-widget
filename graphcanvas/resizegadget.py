@@ -28,6 +28,12 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		self._color = color
 		self.request_update()
 	
+	def get_orientation(self):
+		return self.get_property('orientation')
+	
+	def set_orientation(self, orientation):
+		self.set_property('orientation', orientation)
+	
 	## gobject methods
 	def do_get_property(self, pspec):
 		if(pspec.name == 'orientation'):

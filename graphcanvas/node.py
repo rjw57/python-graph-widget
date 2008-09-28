@@ -25,7 +25,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._background_rect = NodeItemFrame( parent = self )
 
 		# make the background item draggable
-		self._dragging = False
+		self._dragging_frame = False
 		self._background_rect.connect("motion_notify_event", 
 			self._on_frame_motion_notify)
 		self._background_rect.connect("button_press_event", 
@@ -34,9 +34,16 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			self._on_frame_button_release)
 
 		# Add a resize gadget item child
+		self._dragging_resize_gadget = False
 		self._resize_gadget = resizegadget.ResizeGadget( parent = self,
 			orientation = resizegadget.SE)
-		self._resize_gadget.connect('button-press-event', self.foo)
+		self._resize_gadget.connect("motion_notify_event", 
+			self._on_resize_gadget_motion_notify)
+		self._resize_gadget.connect("button_press_event", 
+			self._on_resize_gadget_button_press)
+		self._resize_gadget.connect("button_release_event",
+			self._on_resize_gadget_button_release)
+		self._resize_gadget_size = 15
 	
 	def _update_children(self):
 		propnames = ('x', 'y', 'width', 'height', 'radius-x', 
@@ -48,11 +55,12 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		content_rect = self._background_rect.get_content_area_bounds()
 
 		# Put the resize gadget in the lower-right
-		resize_size = 15
-		self._resize_gadget.set_property('x', content_rect.x2 - resize_size - 1)
-		self._resize_gadget.set_property('y', content_rect.y2 - resize_size - 1)
-		self._resize_gadget.set_property('width', resize_size)
-		self._resize_gadget.set_property('height', resize_size)
+		self._resize_gadget.set_property('x', 
+			content_rect.x2 - self._resize_gadget_size - 1)
+		self._resize_gadget.set_property('y',
+			content_rect.y2 - self._resize_gadget_size - 1)
+		self._resize_gadget.set_property('width', self._resize_gadget_size)
+		self._resize_gadget.set_property('height', self._resize_gadget_size)
 		c = tango.get_color_float_rgb( self._node_data['color-scheme'],
 			tango.LIGHT_CONTRAST)
 		self._resize_gadget.set_color( ( c[0], c[1], c[2], 0.5 ) )
@@ -61,7 +69,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 
 	## event handlers
 	def _on_frame_motion_notify(self, item, target, event):
-		if((self._dragging == True) and 
+		if((self._dragging_frame == True) and 
 		   (event.state & gtk.gdk.BUTTON1_MASK)):
 			new_x = event.x
 			new_y = event.y
@@ -83,7 +91,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 				gtk.gdk.POINTER_MOTION_MASK | 
 					gtk.gdk.BUTTON_RELEASE_MASK,
 				fleur, event.time)
-			self._dragging = True
+			self._dragging_frame = True
 		elif event.button == 3: # right button
 			if(self.get_model() != None):
 				scheme = random.choice(tango.get_scheme_names())
@@ -95,13 +103,46 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	def _on_frame_button_release(self, item, target, event):
 		canvas = item.get_canvas ()
 		canvas.pointer_ungrab(item, event.time)
-		self._dragging = False
+		self._dragging_frame = False
 	
+	def _on_resize_gadget_motion_notify(self, item, target, event):
+		if((self._dragging_resize_gadget == True) and 
+		   (event.state & gtk.gdk.BUTTON1_MASK)):
+			new_x = event.x
+			new_y = event.y
+			new_width = max(self._resize_gadget_size,
+				self._old_width + new_x - self._drag_x)
+			new_height = max(self._resize_gadget_size,
+				self._old_height + new_y - self._drag_y)
+			self.get_model().set_property('width', new_width)
+			self.get_model().set_property('height', new_height)
+			self.ensure_updated()
+		return True
+	
+	def _on_resize_gadget_button_press(self, item, target, event):
+		if(event.button == 1): # left button
+			self._drag_x = event.x
+			self._drag_y = event.y
+			self._old_width = self._node_data['width']
+			self._old_height = self._node_data['height']
+			self.ensure_updated()
+
+			fleur = gtk.gdk.Cursor (gtk.gdk.BOTTOM_RIGHT_CORNER)
+			canvas = item.get_canvas ()
+			canvas.pointer_grab(item,
+				gtk.gdk.POINTER_MOTION_MASK | 
+					gtk.gdk.BUTTON_RELEASE_MASK,
+				fleur, event.time)
+			self._dragging_resize_gadget = True
+		return True
+
+	def _on_resize_gadget_button_release(self, item, target, event):
+		canvas = item.get_canvas ()
+		canvas.pointer_ungrab(item, event.time)
+		self._dragging_resize_gadget = False
+
 	def _on_model_changed(self, model, recompute_bounds):
 		self._update_children()
-	
-	def foo(self, item, target, event):
-		print('hello: %s, %s, %s' % (item, target, event))
 	
 	## simple item methods
 	def set_model(self, model):
