@@ -75,7 +75,7 @@ class TangoRectItem(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		cairoutils.rounded_rect(cr, self._get_internal_bounds(), rx, ry)
 	
 	def do_simple_paint(self, cr, bounds):
-		my_bounds = self._get_internal_bounds()
+		my_bounds = self.get_bounds()
 		if(not boundsutils.do_intersect(my_bounds, bounds)):
 			return
 

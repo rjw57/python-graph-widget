@@ -69,11 +69,11 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		cairoutils.rounded_rect(cr, self._get_internal_bounds(), 0, 0)
 	
 	def do_simple_paint(self, cr, bounds):
-		my_bounds = self._get_internal_bounds()
+		my_bounds = self.get_bounds()
 		if(not boundsutils.do_intersect(my_bounds, bounds)):
 			return
 
-		my_bounds = boundsutils.inset(my_bounds, 1.5, 1.5)
+		my_bounds = boundsutils.inset(self._get_internal_bounds(), 0.5, 0.5)
 
 		width = my_bounds.x2 - my_bounds.x1
 		height = my_bounds.y2 - my_bounds.y1

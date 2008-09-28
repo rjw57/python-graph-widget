@@ -45,18 +45,28 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			self._on_resize_gadget_button_release)
 		self._resize_gadget_size = 15
 	
-	def _update_children(self):
-		bounds = self.get_bounds()
+	def do_update(self, entire_tree, cr):
+		# Get the requested node area
+		content_bounds_req = goocanvas.Bounds(1,1,2,2)
+		request_area = self._background_rect.get_bounds_for_desired_content_bounds( \
+			cr, content_bounds_req)
 
-		propnames = ('width', 'height', 'radius-x', 'radius-y', 'color-scheme')
+		self._node_data['width'] = max(self._node_data['width'],
+			request_area.x2 - request_area.x1)
+		self._node_data['height'] = max(self._node_data['height'],
+			request_area.y2 - request_area.y1)
+
+		propnames = ('width', 'height', 'radius-x', 'radius-y', 'color-scheme',
+			'node-title')
 		for name in propnames:
 			self._background_rect.set_property(name, self._node_data[name])
 
 		self._background_rect.ensure_updated()
 
 		content_rect = self._background_rect.get_content_area_bounds()
-		#content_rect = goocanvas.Bounds(2,2,
-		#	bounds.x2-bounds.x1-2,bounds.y2-bounds.y1-2)
+		content_rect = goocanvas.Bounds(2,2,
+			self._node_data['width'] - 4.0, 
+			self._node_data['height'] - 4.0)
 
 		# Put the resize gadget in the lower-right
 		self._resize_gadget.set_property('x',
@@ -68,12 +78,17 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		c = tango.get_color_float_rgb( self._node_data['color-scheme'],
 			tango.LIGHT_CONTRAST)
 		self._resize_gadget.set_color( ( c[0], c[1], c[2], 0.5 ) )
+		self._resize_gadget.ensure_updated()
 
 		for child_idx in range(self.get_n_children()):
 			child = self.get_child(child_idx)
 			child.set_simple_transform(self._node_data['x'], self._node_data['y'],
 				1.0, 0.0)
 			child.ensure_updated()
+
+		out_bounds = goocanvas.Bounds()
+		goocanvas.Group.do_update(self, entire_tree, cr, out_bounds)
+		return out_bounds
 
 	## event handlers
 	def _on_frame_motion_notify(self, item, target, event):
@@ -148,7 +163,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._dragging_resize_gadget = False
 
 	def _on_model_changed(self, model, recompute_bounds):
-		self._update_children()
+		self.request_update()
 	
 	## simple item methods
 	def set_model(self, model):
@@ -157,9 +172,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		# so nefarious
 		self._node_data = model._node_data
 
-		self._update_children()
-
 		model.connect('changed', self._on_model_changed)
+		self.request_update()
+	
 
 gobject.type_register(NodeItem)
 
@@ -187,6 +202,26 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 
 	def get_content_area_bounds(self):
 		return self._content_bounds
+
+	## item methods
+	def get_bounds_for_desired_content_bounds(self, cr, content_bounds):
+		cr.select_font_face('Sans', cairo.FONT_SLANT_NORMAL,
+			cairo.FONT_WEIGHT_BOLD)
+		cr.set_font_size(self._font_size)
+		extents = cr.text_extents(self.get_node_title())
+		font_width = math.ceil(extents[2])
+		font_height = math.ceil(extents[3])
+		font_padding = math.ceil(0.5 * font_height)
+		y = font_height + font_padding
+		y += font_padding + 1.5
+		y = math.ceil(y)
+		bounds = goocanvas.Bounds()
+		bounds.x1 = content_bounds.x1 - 3.0
+		bounds.y1 = content_bounds.y1 - 3.0 - y
+		width = max(content_bounds.x2-content_bounds.x1, font_width + 10.0)
+		bounds.x2 = bounds.x1 + width + 3.0
+		bounds.y2 = bounds.y2 + 5.0
+		return bounds
 	
 	## gobject methods
 	def do_get_property(self, pspec):
