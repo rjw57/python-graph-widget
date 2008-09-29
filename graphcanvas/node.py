@@ -87,11 +87,15 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			if(type == PadType.INPUT):
 				xalign = 0.0
 				padcolumn = 0
+				labelcolumn = 1
 				padorient = tango.LEFT
+				ellip = pango.ELLIPSIZE_END
 			else:
 				xalign = 1.0
+				labelcolumn = 1
 				padcolumn = 2
 				padorient = tango.RIGHT
+				ellip = pango.ELLIPSIZE_START
 
 			# register interest in the pad
 			pad_model.connect('changed', self._on_pad_changed)
@@ -100,12 +104,13 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			pad_label = goocanvas.Text(parent=self._pad_table, 
 				text=pad_model.get_name(),
 				pointer_events=goocanvas.EVENTS_NONE,
-				ellipsize=pango.ELLIPSIZE_START,
+				ellipsize=ellip,
 				font='Sans 10',
 				x=0.0, y=0.0)
 			self._pad_labels.append(pad_label)
 			self._pad_table.set_child_properties(pad_label, \
-				row = row_idx, column = 1, x_expand = True, 
+				row = row_idx, column = labelcolumn,
+				x_expand = True, 
 				left_padding = 4.0, right_padding = 4.0,
 				x_shrink = True, x_align = xalign)
 
@@ -125,7 +130,8 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 				self._on_pad_gadget_button_release)
 			self._pad_gadgets.append(pad_gadget)
 			self._pad_table.set_child_properties(pad_gadget, \
-				row = row_idx, column = padcolumn)
+				row = row_idx, column = padcolumn, 
+				x_shrink = False, x_expand = False, x_fill = False)
 			pad_gadget.set_pad_model(pad_model)
 
 			row_idx += 1
