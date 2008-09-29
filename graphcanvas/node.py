@@ -93,12 +93,15 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 				padcolumn = 2
 				padorient = tango.RIGHT
 
+			# register interest in the pad
+			pad_model.connect('changed', self._on_pad_changed)
+
 			# Create the label
 			pad_label = goocanvas.Text(parent=self._pad_table, 
 				text=pad_model.get_name(),
 				pointer_events=goocanvas.EVENTS_NONE,
 				ellipsize=pango.ELLIPSIZE_START,
-				font='Sans 12',
+				font='Sans 10',
 				x=0.0, y=0.0)
 			self._pad_labels.append(pad_label)
 			self._pad_table.set_child_properties(pad_label, \
@@ -127,11 +130,16 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 
 			row_idx += 1
 
-		foo = gtk.Button('Hello')
-		foo_item = goocanvas.Widget(parent = self._pad_table, widget = foo)
-		self._pad_table.set_child_properties(foo_item, row = 4, column = 0,
-			columns = 3, x_fill = True,
-			left_padding = 6.0, right_padding = 6.0)
+		#foo = gtk.Button('Hello')
+		#foo_item = goocanvas.Widget(parent = self._pad_table, widget = foo)
+		#self._pad_table.set_child_properties(foo_item, row = 4, column = 0,
+		#	columns = 3, x_fill = True,
+		#	left_padding = 6.0, right_padding = 6.0)
+
+	def _on_pad_changed(self, model, recompute):
+		self._update_pad_table()
+		self._needs_update = True
+		self.changed(True)
 	
 	def do_update(self, entire_tree, cr):
 		if(not self._needs_update):
@@ -416,7 +424,7 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 		self._node_data = {
 			'node-title': 'Node',
 		}
-		self._font_size = 18
+		self._font_size = 16
 		self._content_bounds = goocanvas.Bounds()
 
 		# Initialise the remaining parts of the item
