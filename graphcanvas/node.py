@@ -12,6 +12,7 @@ import resizegadget
 import simple
 import pango
 import padgadget
+import edge
 
 class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	def __init__(self, *args, **kwargs):
@@ -56,6 +57,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._pad_labels = []
 		self._pad_gadgets = []
 		self._default_pad_size = 13.0
+		self._dragging_pad_gadget = False
 		for i in range(4):
 			pad_label = goocanvas.Text(parent=self._pad_table, 
 				text='Very Long Pad Label %i' % i,
@@ -74,6 +76,12 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 				x=0.0, y=0.0, width=20.0, height=self._default_pad_size,
 				pad_size=self._default_pad_size,
 				pointer_events = goocanvas.EVENTS_ALL)
+			pad_gadget.connect("motion_notify_event", 
+				self._on_pad_gadget_motion_notify)
+			pad_gadget.connect("button_press_event", 
+				self._on_pad_gadget_button_press)
+			pad_gadget.connect("button_release_event",
+				self._on_pad_gadget_button_release)
 			self._pad_gadgets.append(pad_gadget)
 			self._pad_table.set_child_properties(pad_gadget, \
 				row = i, column = 1)
@@ -171,6 +179,59 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		return out_bounds
 
 	## event handlers
+	def _on_pad_gadget_motion_notify(self, item, target, event):
+		if((self._dragging_pad_gadget == True) and 
+		  (event.state & gtk.gdk.BUTTON1_MASK)):
+			root_item = self.get_canvas().get_root_item()
+		   	event_point = self.get_canvas().\
+				convert_from_item_space(target, event.x, event.y)
+			self._temporary_edge_item.set_end_anchor(*event_point)
+			self._temporary_edge_item.ensure_updated()
+			root_item.ensure_updated()
+		return True
+	
+	def _on_pad_gadget_button_press(self, item, target, event):
+		if(event.button == 1): # left button
+			root_item = self.get_canvas().get_root_item()
+			pad_anchor = target.get_pad_anchor()
+		   	event_point = self.get_canvas().\
+				convert_from_item_space(target, event.x, event.y)
+			canvas_space_anchor = self.get_canvas().\
+				convert_from_item_space(target, *pad_anchor)
+			self._temporary_edge_item = edge.EdgeItem( \
+				parent = root_item,
+				pointer_events = goocanvas.EVENTS_NONE,
+				edge_width = self._default_pad_size - 4.0) 
+			self._temporary_edge_item.set_start_anchor(*canvas_space_anchor)
+			self._temporary_edge_item.set_end_anchor(*event_point)
+			root_item.ensure_updated()
+
+			#self._old_loc = ( self._node_data['x'], self._node_data['y'] )
+			fleur = gtk.gdk.Cursor (gtk.gdk.FLEUR)
+			canvas = item.get_canvas ()
+			canvas.pointer_grab(item,
+				gtk.gdk.POINTER_MOTION_MASK | 
+					gtk.gdk.BUTTON_RELEASE_MASK,
+				fleur, event.time)
+			self._dragging_pad_gadget = True
+		return True
+
+	def _on_pad_gadget_button_release(self, item, target, event):
+		canvas = item.get_canvas ()
+		canvas.pointer_ungrab(item, event.time)
+		self._dragging_pad_gadget = False
+
+		# see if the edge is valid (and hence should be 
+		# added to the model).
+		if(self._temporary_edge_item.is_valid()):
+			print('ooh - it\'s valid!')
+
+		# Remove the temporary edge
+		temp_parent = self._temporary_edge_item.get_parent()
+		idx = temp_parent.find_child(self._temporary_edge_item)
+		temp_parent.remove_child(idx)
+		self._temporary_edge_item = None
+
 	def _on_frame_motion_notify(self, item, target, event):
 		if((self._dragging_frame == True) and 
 		   (event.state & gtk.gdk.BUTTON1_MASK)):

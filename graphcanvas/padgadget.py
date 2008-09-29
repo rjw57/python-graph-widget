@@ -64,7 +64,7 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		names = self._pad_data.keys()
 		if(pspec.name in names):
 			self._pad_data[pspec.name] = value
-			self.request_update()
+			self.changed(True)
 		else:
 			goocanvas.Rect.do_set_property(self, pspec, value)
 	
@@ -77,7 +77,7 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 			self, x, y, cr, is_pointer_event)
 
 	def do_simple_create_path(self, cr):
-		(x, y) = self._get_pad_location()
+		(x, y) = self.get_pad_location()
 		tango.pad_boundary_curve(cr, x, y, self.get_orientation(),
 			self.get_pad_size())
 	
@@ -86,7 +86,7 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		if(not boundsutils.do_intersect(my_bounds, bounds)):
 			return
 
-		(x, y) = self._get_pad_location()
+		(x, y) = self.get_pad_location()
 
 		tango.paint_pad(cr, self.get_color_scheme(), x, y,
 			self.get_orientation(), self.get_pad_size(),
@@ -95,8 +95,13 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		#cairoutils.rounded_rect(cr, self._get_internal_bounds(), 0, 0)
 		#cr.set_source_rgb(1,0,0)
 		#cr.fill()
+
+	def get_pad_anchor(self):
+		location = self.get_pad_location()
+		return tango.pad_get_centre(location[0], location[1],
+			self.get_orientation(), self.get_pad_size())
 	
-	def _get_pad_location(self):
+	def get_pad_location(self):
 		int_bounds = self._get_internal_bounds()
 		
 		## default x and y is to be in centre

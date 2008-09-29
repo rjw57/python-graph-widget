@@ -126,9 +126,7 @@ def pad_extents(x, y, orientation, size):
 	else:
 		raise ValueError('Invalid orientation')
 
-def pad_boundary_curve(cr, x, y, orientation, size):
-	''' Set the current Cairo curve to the boundary of the
-		specified pad. '''
+def pad_get_centre(x, y, orientation, size):
 	radius = size * 0.5
 	extent = math.ceil(0.62 * radius) + 0.5 # Golden ratio
 
@@ -147,6 +145,14 @@ def pad_boundary_curve(cr, x, y, orientation, size):
 	else:
 		raise ValueError('Invalid orientation')
 
+	return (cx, cy)
+
+def pad_boundary_curve(cr, x, y, orientation, size):
+	''' Set the current Cairo curve to the boundary of the
+		specified pad. '''
+	radius = size * 0.5
+	extent = math.ceil(0.62 * radius) + 0.5 # Golden ratio
+	(cx, cy) = pad_get_centre(x, y, orientation, size)
 	_pad_make_curve(cr, cx, cy, radius, extent, orientation)
 
 def paint_pad(cr, scheme, x, y, orientation, size, *args):
@@ -159,25 +165,10 @@ def paint_pad(cr, scheme, x, y, orientation, size, *args):
 	radius = size * 0.5
 	extent = math.ceil(0.62 * radius) + 0.5 # Golden ratio
 
-	highlight = False
 	if(len(args) > 0):
 		highlight = args[0]
 
-	if(orientation == RIGHT):
-		cx = x - extent
-		cy = y
-	elif(orientation == LEFT):
-		cx = x + extent
-		cy = y
-	elif(orientation == TOP):
-		cx = x
-		cy = y + extent
-	elif(orientation == BOTTOM):
-		cx = x
-		cy = y - extent
-	else:
-		raise ValueError('Invalid orientation')
-
+	(cx, cy) = pad_get_centre(x, y, orientation, size)
 	_pad_make_curve(cr, cx, cy, radius - 0.5, extent - 0.5, orientation)
 	(minx,miny,maxx,maxy) = pad_extents(x,y,orientation,size)
 
