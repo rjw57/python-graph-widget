@@ -83,11 +83,11 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._pad_table.set_child_properties(foo_item, row = 4, column = 0,
 			columns = 2, x_fill = True,
 			left_padding = 6.0, right_padding = 6.0)
-	
+
 	def do_update(self, entire_tree, cr):
 		if(not self._needs_update):
 			out_bounds = goocanvas.Bounds()
-			goocanvas.Group.do_update(self, True, cr, out_bounds)
+			goocanvas.Group.do_update(self, entire_tree, cr, out_bounds)
 			return out_bounds
 
 		## find the minimum width and height for the node frame.
@@ -165,9 +165,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			gadget.set_color_scheme( self._node_data['color-scheme'] )
 
 		out_bounds = goocanvas.Bounds()
-		goocanvas.Group.do_update(self,	True, cr, out_bounds)
-
+		goocanvas.Group.do_update(self,	entire_tree, cr, out_bounds)
 		self._needs_update = False
+
 		return out_bounds
 
 	## event handlers
@@ -182,6 +182,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			new_y = self._old_loc[1] + delta_y
 			self.get_model().set_property('x', new_x)
 			self.get_model().set_property('y', new_y)
+			self._needs_update = True
 			self.ensure_updated()
 		return True
 	
@@ -223,6 +224,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 				self._old_size[1] + delta_y)
 			self.get_model().set_property('width', new_width)
 			self.get_model().set_property('height', new_height)
+			self._needs_update = True
 			self.ensure_updated()
 		return True
 	
@@ -357,6 +359,10 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 		tangocanvas.TangoRectItem.do_simple_create_path(self, cr)
 	
 	def do_simple_paint(self, cr, bounds):
+		#my_bounds = self.get_bounds()
+		#if(not boundsutils.do_intersect(my_bounds, bounds)):
+		#	return
+
 		tangocanvas.TangoRectItem.do_simple_paint(self, cr, bounds)
 
 		scheme = self.get_color_scheme()
@@ -399,15 +405,6 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 
 		content_bounds = boundsutils.inset( \
 			self.get_content_area_bounds(), 2.0, 2.0)
-
-#		tango.paint_pad(cr, scheme, node_bounds.x2, 
-#			content_bounds.y1 + 20.5, tango.RIGHT, 15, True)
-#
-#		tango.paint_pad(cr, scheme, node_bounds.x2, 
-#			content_bounds.y1 + 50.5, tango.RIGHT, 15)
-#
-#		tango.paint_pad(cr, scheme, node_bounds.x2, 
-#			content_bounds.y1 + 80.5, tango.RIGHT, 15)
 
 gobject.type_register(NodeItemFrame)
 

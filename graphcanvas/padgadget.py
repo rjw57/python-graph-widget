@@ -114,11 +114,11 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 	## event handlers
 	def do_enter_notify_event(self, target, event):
 		self._highlight_flag = True
-		self.request_update()
+		self.changed(False)
 	
 	def do_leave_notify_event(self, target, event):
 		self._highlight_flag = False
-		self.request_update()
+		self.changed(False)
 
 gobject.type_register(PadGadget)
 
