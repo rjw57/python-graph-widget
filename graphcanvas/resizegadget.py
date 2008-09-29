@@ -5,6 +5,7 @@ import goocanvas
 import gobject
 import simple
 import math
+import cairo
 
 # Various orientations of the widget.
 NE, NW, SE, SW = range(4)
@@ -105,8 +106,11 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 			cr.move_to(xstart + (xsign * offset), ystart)
 			cr.line_to(xstart, ystart + (ysign * offset))
 
-		tango.cairo_set_source(cr, self.get_color_scheme(),
-			tango.LIGHT_CONTRAST)
+		color = list(tango.get_color_float_rgb( \
+			self.get_color_scheme(), tango.LIGHT_CONTRAST))
+		color.append(0.5)
+		cr.set_source_rgba(*color)
+		cr.set_line_cap(cairo.LINE_CAP_ROUND)
 		cr.set_line_width(1.0)
 		cr.stroke()
 
