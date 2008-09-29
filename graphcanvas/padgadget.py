@@ -23,6 +23,7 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 			'color-scheme': 'Plum',
 			'pad-size': 15.0,
 		}
+		self._model = None
 		goocanvas.Rect.__init__(self, *args, **kwargs)
 	
 	def _get_internal_bounds(self):
@@ -67,10 +68,16 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 			self.changed(True)
 		else:
 			goocanvas.Rect.do_set_property(self, pspec, value)
+
+	## we don't use the canvas concept of a model here because
+	## a pad model does not affect its positioning on the canvas.
+	def set_pad_model(self, model):
+		self._model = model
+
+	def get_pad_model(self):
+		return self._model
 	
 	## simple item methods
-	def set_model(self, model):
-		goocanvas.Rect.do_set_model(self, model)
 	
 	def do_simple_is_item_at(self, x, y, cr, is_pointer_event):
 		return simple.SimpleItem.do_simple_is_item_at(

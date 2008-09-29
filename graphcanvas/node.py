@@ -75,6 +75,8 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._pad_gadgets = []
 		self._default_pad_size = 13.0
 
+		self._pad_gadget_to_model_mapping = {}
+
 		## form a list of pads, output first input second
 		pads = self._get_pads_of_type(PadType.OUTPUT)
 		pads.extend(self._get_pads_of_type(PadType.INPUT))
@@ -121,6 +123,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			self._pad_gadgets.append(pad_gadget)
 			self._pad_table.set_child_properties(pad_gadget, \
 				row = row_idx, column = padcolumn)
+			pad_gadget.set_pad_model(pad_model)
 
 			row_idx += 1
 
@@ -129,7 +132,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._pad_table.set_child_properties(foo_item, row = 4, column = 0,
 			columns = 3, x_fill = True,
 			left_padding = 6.0, right_padding = 6.0)
-
+	
 	def do_update(self, entire_tree, cr):
 		if(not self._needs_update):
 			out_bounds = goocanvas.Bounds()
@@ -196,6 +199,15 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			content_rect.y2 - content_rect.y1)
 		self._pad_table.update(entire_tree, cr, goocanvas.Bounds())
 
+		## now update each pad gadget's model about it's anchor location
+		for pad_gadget in self._pad_gadgets:
+			pad_model = pad_gadget.get_pad_model()
+			if(pad_model != None):
+				pad_anchor = pad_gadget.get_pad_anchor()
+				canvas_space_anchor = self.get_canvas().\
+					convert_from_item_space(pad_gadget, *pad_anchor)
+				pad_model.set_anchor_location(canvas_space_anchor)
+
 		## Put the resize gadget in the lower-right
 		self._resize_gadget.translate(
 			content_rect.x2 - self._resize_gadget_size - 1,
@@ -205,7 +217,8 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._resize_gadget.set_color_scheme( self._node_data['color-scheme'] )
 
 		## update the fill colour of each pad label
-		label_color = tango.get_color_hex_string_rgb( self._node_data['color-scheme'],
+		label_color = tango.get_color_hex_string_rgb( 
+			self._node_data['color-scheme'],
 			tango.MEDIUM_CONTRAST)
 		for label in self._pad_labels:
 			label.set_property('fill_color', label_color)
@@ -218,6 +231,15 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._needs_update = False
 
 		return out_bounds
+	
+	def _get_pad_at(self, x, y):
+		items = self.get_canvas().get_items_at(x,y,False)
+		pad_item = None
+		if(items != None):
+			for item in items:
+				if(isinstance(item, padgadget.PadGadget)):
+					pad_item = item
+		return pad_item
 
 	## event handlers
 	def _on_pad_gadget_motion_notify(self, item, target, event):
@@ -247,6 +269,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			self._temporary_edge_item.set_end_anchor(*event_point)
 			root_item.ensure_updated()
 
+			## record what the start pad is
+			self._edge_start_pad_model = target.get_pad_model()
+
 			#self._old_loc = ( self._node_data['x'], self._node_data['y'] )
 			fleur = gtk.gdk.Cursor (gtk.gdk.FLEUR)
 			canvas = item.get_canvas ()
@@ -262,12 +287,19 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		canvas.pointer_ungrab(item, event.time)
 		self._dragging_pad_gadget = False
 
+		# see if we have any pad gadgets under the mouse
+		event_point = self.get_canvas().\
+			convert_from_item_space(target, event.x, event.y)
+		mouse_pad = self._get_pad_at(*event_point)
+
 		# see if the edge is valid (and hence should be 
 		# added to the model, should we have one).
 		model = self.get_model()
 		graph_model = model.get_graph_model()
 		if((model != None) and (self._temporary_edge_item.is_valid())):
-			edge_model = edge.EdgeModel(parent = graph_model)
+			edge_model = edge.EdgeModel(parent = graph_model,
+			start_pad = self._edge_start_pad_model,
+			end_pad = mouse_pad.get_pad_model())
 
 		# Remove the temporary edge
 		temp_parent = self._temporary_edge_item.get_parent()
@@ -535,6 +567,10 @@ class Pad(goocanvas.ItemModelSimple, goocanvas.ItemModel):
 			gobject.PARAM_READWRITE),
 	}
 
+	__gsignals__ = {
+		'anchor-moved': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, []),
+	}
+
 	def __init__(self, *args, **kwargs):
 		self._pad_data = {
 			'name': 'Untitled',
@@ -542,8 +578,22 @@ class Pad(goocanvas.ItemModelSimple, goocanvas.ItemModel):
 			'type': PadType.INPUT,
 			'parent': None,
 		}
+		self._anchor_location = (0, 0)
 		gobject.GObject.__init__(self, *args, **kwargs)
 	
+	def get_anchor_location(self):
+		return self._anchor_location
+	
+	def set_anchor_location(self, location):
+		# optimisation. ignore setting the anchor to an 
+		# existing value
+		if((location[0] == self._anchor_location[0]) and
+			(location[1] == self._anchor_location[1])):
+			return
+
+		self._anchor_location = location
+		self.emit('anchor-moved')
+
 	def get_name(self):
 		return self.get_property('name')
 	

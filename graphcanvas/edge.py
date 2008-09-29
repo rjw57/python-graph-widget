@@ -45,14 +45,17 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		self._edge_model_data = {
 			'color-scheme': 'Butter',
 			'invalid-color-scheme': 'Scarlet Red',
+			'graph-model': None,
+			'start-pad': None,
+			'end-pad': None,
 		}
 
-		## the start and end pads
+		## the start and end pad items
 		self._start_pad = None
 		self._end_pad = None
 
 		goocanvas.ItemSimple.__init__(self, *args, **kwargs)
-		
+
 	def get_edge_width(self):
 		return self.get_property('edge-width')
 	
@@ -92,7 +95,10 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 	def is_valid(self):
 		''' Work out if this edge is valid based on whether
 		    there is a pad under the start and end anchor. '''
-		
+		start = self.get_start_anchor()
+		end = self.get_end_anchor()
+		self._start_pad = self._get_pad_at(*start)
+		self._end_pad = self._get_pad_at(*end)
 		return (self._start_pad != None) and (self._end_pad != None)
 
 	## gobject methods
@@ -124,6 +130,39 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 
 		# so nasty
 		self._edge_model_data = model._edge_data
+		model.connect('changed', self._on_model_changed)
+		self._on_model_changed(model, True)
+	
+	def _on_pad_anchor_changed(self, pad_model):
+		model = self.get_model()
+		self._update_anchor_locations(model)
+	
+	def _update_anchor_locations(self, model):
+		if(model != None):
+			start_pad_model = model.get_property('start-pad')
+			end_pad_model = model.get_property('end-pad')
+			if(end_pad_model != None):
+				loc = end_pad_model.get_anchor_location()
+				self.set_property('end-anchor-x', loc[0])
+				self.set_property('end-anchor-y', loc[1])
+			if(start_pad_model != None):
+				loc = start_pad_model.get_anchor_location()
+				self.set_property('start-anchor-x', loc[0])
+				self.set_property('start-anchor-y', loc[1])
+		self.changed(True)
+
+	def _on_model_changed(self, model, recompute_bounds):
+		if(model != None):
+			start_pad = model.get_property('start-pad')
+			end_pad = model.get_property('end-pad')
+			assert start_pad != None
+			assert end_pad != None
+			start_pad.connect('anchor-moved', 
+				self._on_pad_anchor_changed)
+			end_pad.connect('anchor-moved', 
+				self._on_pad_anchor_changed)
+			self._update_anchor_locations(model)
+		self.changed(True)
 	
 	def do_simple_update(self, cr):
 		width = self.get_edge_width()
@@ -133,12 +172,6 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		self.bounds_y1 = bounds.y1
 		self.bounds_x2 = bounds.x2
 		self.bounds_y2 = bounds.y2
-
-		# Update the start and end pads
-		start = self.get_start_anchor()
-		end = self.get_end_anchor()
-		self._start_pad = self._get_pad_at(*start)
-		self._end_pad = self._get_pad_at(*end)
 	
 	def _get_pad_at(self, x, y):
 		items = self.get_canvas().get_items_at(x,y,False)
@@ -150,8 +183,7 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		return pad_item
 
 	def do_simple_is_item_at(self, x, y, cr, is_pointer_event):
-		return simple.SimpleItem.do_simple_is_item_at(
-			self, x, y, cr, is_pointer_event)
+		return False
 	
 	def _get_internal_bounds(self):
 		start = self.get_start_anchor()
@@ -164,7 +196,6 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 
 	def do_simple_create_path(self, cr):
 		# For hit testing
-		cr.new_path()
 		start = self.get_start_anchor()
 		end = self.get_end_anchor()
 		cr.set_line_cap(cairo.LINE_CAP_ROUND)
@@ -211,6 +242,10 @@ class EdgeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			gobject.PARAM_READWRITE ) ,
 		'graph-model': (gobject.TYPE_OBJECT, None, None,
 			gobject.PARAM_READWRITE),
+		'start-pad': (gobject.TYPE_OBJECT, None, None,
+			gobject.PARAM_READWRITE),
+		'end-pad': (gobject.TYPE_OBJECT, None, None,
+			gobject.PARAM_READWRITE),
 	}
 
 	def __init__(self, *args, **kwargs):
@@ -218,6 +253,8 @@ class EdgeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			'color-scheme': 'Butter',
 			'invalid-color-scheme': 'Scarlet Red',
 			'graph-model': None,
+			'start-pad': None,
+			'end-pad': None,
 		}
 
 		goocanvas.GroupModel.__init__(self, *args, **kwargs)
@@ -247,13 +284,14 @@ class EdgeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 	## item model methods
 	def do_create_item(self, canvas):
 		item = EdgeItem()
-		item.set_model(self)
 		item.set_canvas(canvas)
 		item.set_properties(
+			pointer_events = goocanvas.EVENTS_NONE,
 			start_anchor_x = 10,
 			start_anchor_y = 10,
 			end_anchor_x = 200,
 			end_anchor_y = 100 )
+		item.set_model(self)
 		return item
 
 gobject.type_register(EdgeModel)
