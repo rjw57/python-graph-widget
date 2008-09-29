@@ -185,8 +185,9 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		tango.cairo_set_source(cr, scheme, tango.DARK)
 		cr.stroke_preserve()
 		cr.set_line_width(self.get_edge_width() - 2)
+
 		tango.cairo_set_source(cr, scheme, tango.LIGHT)
-		cr.stroke_preserve()
+		cr.stroke()
 
 gobject.type_register(EdgeItem)
 

@@ -45,7 +45,10 @@ class App:
 
 	def __init__(self, glade):
 		graph_model = graphcanvas.GraphModel()
+		#graph_model = goocanvas.GroupModel()
 		self._model = graph_model
+	
+		self.new_node(10, 10)
 
 		scrolled_win = gtk.ScrolledWindow()
 		graph_widget = self.new_canvas(graph_model)
@@ -58,8 +61,6 @@ class App:
 		scrolled_win.add(graph_widget)
 		box = glade.get_widget('rbox')
 		box.pack_start(scrolled_win, True, True)
-	
-		self.new_node(10, 10)
 	
 	def on_main_window_delete_event(self, widget, event):
 		gtk.main_quit()

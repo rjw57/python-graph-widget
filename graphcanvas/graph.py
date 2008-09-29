@@ -4,6 +4,8 @@ import cairoutils
 import goocanvas
 import gobject
 import simple
+import node
+import edge
 
 class GraphItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	#__gproperties__ = {
@@ -33,7 +35,7 @@ class GraphItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	
 	## simple item methods
 	def set_model(self, model):
-		goocanvas.Group.do_set_model(self, model)
+		goocanvas.Group.set_model(self, model)
 
 gobject.type_register(GraphItem)
 
@@ -45,6 +47,19 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 
 	def __init__(self, *args, **kwargs):
 		goocanvas.GroupModel.__init__(self, *args, **kwargs)
+
+		## add internal models for nodes and edges
+		self._node_models = goocanvas.GroupModel(parent = self)
+		self._edge_models = goocanvas.GroupModel(parent = self)
+	
+	## group methods
+	def do_add_child(self, child, pos):
+		## special cases for nodes and edges - essentially
+		## we're creating a node and edge layer.
+		if(isinstance(child, node.NodeModel)):
+			self._node_models.add_child(child, pos)
+		else:
+			goocanvas.GroupModel.do_add_child(self, child, pos)
 
 	## gobject methods
 #	def do_get_property(self, pspec):
@@ -66,8 +81,20 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 	## item model methods
 	def do_create_item(self, canvas):
 		item = GraphItem()
+		#item = goocanvas.Group()
 		item.set_model(self)
 		item.set_canvas(canvas)
+
+		## for each child, create an item and add it
+		for idx in range(self.get_n_children()):
+			child = self.get_child(idx)
+
+			## FIXME: Horrible hack
+			try:
+				item.add_child(child.do_create_item(canvas))
+			except:
+				item.add_child(child.do_create_item(child, canvas))
+
 		return item
 
 gobject.type_register(GraphModel)

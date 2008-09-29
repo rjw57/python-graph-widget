@@ -19,7 +19,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		goocanvas.Group.__init__(self, *args, **kwargs)
 
 		## a flag for indicating if we need an update
-		self._needs_update = False
+		self._needs_update = True
 
 		self._node_data = {
 			'node-title': 'Node',
