@@ -21,6 +21,15 @@ class App:
 	def _button_press(self, target, event):
 		if(event.button == 2): ## middle
 			self.new_node(event.x, event.y)
+	
+	def _scroll_event(self, canvas, event):
+		mult = 1.0
+		if(event.direction == gtk.gdk.SCROLL_UP):
+			mult = 1.1
+		elif(event.direction == gtk.gdk.SCROLL_DOWN):
+			mult = 0.9
+		scale = canvas.get_scale()
+		canvas.set_scale(scale * mult)
 
 	def new_node(self, x, y):
 		new_node = graphcanvas.NodeModel(
@@ -48,9 +57,11 @@ class App:
 		graph_widget.set_property('background-color-rgb', bg_color)
 		graph_widget.set_property('automatic-bounds', True)
 		graph_widget.set_property('integer-layout', True)
+		# graph_widget.set_property('anchor', gtk.ANCHOR_CENTER)
 		graph_widget.set_root_item_model(graph_model)
 
-		graph_widget.connect('button-release-event', self._button_press)
+		graph_widget.connect('button-press-event', self._button_press)
+		graph_widget.connect('scroll-event', self._scroll_event)
 
 		return graph_widget
 

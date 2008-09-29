@@ -29,7 +29,8 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			'pads': [],
 		}
 
-		self._background_rect = NodeItemFrame( parent = self, x = 0.0, y = 0.0,
+		self._background_rect = NodeItemFrame( \
+			parent = self, x = 0.0, y = 0.0,
 			width = 200.0, height = 30.0)
 
 		# make the background item draggable
@@ -188,6 +189,10 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		#	minimum_width)
 		self._node_data['height'] = max(self._node_data['height'], 
 			minimum_height)
+
+		# Make widht and height integer
+		self._node_data['width'] = math.ceil(self._node_data['width'])
+		self._node_data['height'] = math.ceil(self._node_data['height'])
 
 		## update all the properties for the background.
 		propnames = ('width', 'height', 'radius-x',
