@@ -44,7 +44,7 @@ class App:
 		return graph_widget
 
 	def __init__(self, glade):
-		graph_model = goocanvas.GroupModel()
+		graph_model = graphcanvas.GraphModel()
 		self._model = graph_model
 
 		scrolled_win = gtk.ScrolledWindow()
