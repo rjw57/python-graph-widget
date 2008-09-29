@@ -12,12 +12,16 @@ NE, NW, SE, SW = range(4)
 class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 	__gproperties__ = {
 		'orientation': ( int, None, None, 0, 3, 0, gobject.PARAM_READWRITE ) ,
+		'color-scheme': ( str, None, None, 'Plum', gobject.PARAM_READWRITE ) ,
 	}
 
 	def __init__(self, *args, **kwargs):
 		self._bounds = goocanvas.Bounds()
 		self._color = (1.0, 1.0, 1.0, 0.33)
-		self._orientation = SE
+		self._resize_data = {
+			'orientation': tango.RIGHT,
+			'color-scheme': 'Plum',
+		}
 
 		goocanvas.Rect.__init__(self, *args, **kwargs)
 	
@@ -30,12 +34,11 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 				self.get_property('y') + self.get_property('height')))
 		return internal_bounds
 	
-	def get_color(self):
-		return self._color
+	def get_color_scheme(self):
+		return self.get_property('color-scheme')
 	
-	def set_color(self, color):
-		self._color = color
-		self.request_update()
+	def set_color_scheme(self, color_scheme):
+		self.set_property('color-scheme', color_scheme)
 	
 	def get_orientation(self):
 		return self.get_property('orientation')
@@ -45,14 +48,16 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 	
 	## gobject methods
 	def do_get_property(self, pspec):
-		if(pspec.name == 'orientation'):
-			return self._orientation
+		names = self._resize_data.keys()
+		if(pspec.name in names):
+			return self._resize_data[pspec.name]
 		else:
 			return goocanvas.Rect.do_get_property(self, pspec)
 	
 	def do_set_property(self, pspec, value):
-		if(pspec.name == 'orientation'):
-			self._orientation = value
+		names = self._resize_data.keys()
+		if(pspec.name in names):
+			self._resize_data[pspec.name] = value
 		else:
 			goocanvas.Rect.do_set_property(self, pspec, value)
 	
@@ -79,14 +84,16 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		height = my_bounds.y2 - my_bounds.y1
 		size = int(math.floor(min(width, height)))
 
-		if((self._orientation == SE) or (self._orientation == NE)):
+		orientation = self.get_orientation()
+
+		if((orientation == SE) or (orientation == NE)):
 			xsign = -1
 			xstart = my_bounds.x2
 		else:
 			xsign = 1
 			xstart = my_bounds.x2 - size
 
-		if((self._orientation == NE) or (self._orientation == NW)):
+		if((orientation == NE) or (orientation == NW)):
 			ysign = 1
 			ystart = my_bounds.y2 - size
 		else:
@@ -98,7 +105,8 @@ class ResizeGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 			cr.move_to(xstart + (xsign * offset), ystart)
 			cr.line_to(xstart, ystart + (ysign * offset))
 
-		cr.set_source_rgba(*self._color)
+		tango.cairo_set_source(cr, self.get_color_scheme(),
+			tango.LIGHT_CONTRAST)
 		cr.set_line_width(1.0)
 		cr.stroke()
 

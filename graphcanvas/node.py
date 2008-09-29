@@ -151,9 +151,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			content_rect.y2 - self._resize_gadget_size - 1)
 		self._resize_gadget.set_property('width', self._resize_gadget_size)
 		self._resize_gadget.set_property('height', self._resize_gadget_size)
-		c = tango.get_color_float_rgb( self._node_data['color-scheme'],
-			tango.LIGHT_CONTRAST)
-		self._resize_gadget.set_color( ( c[0], c[1], c[2], 0.5 ) )
+		self._resize_gadget.set_color_scheme( self._node_data['color-scheme'] )
 
 		## update the fill colour of each pad label
 		label_color = tango.get_color_hex_string_rgb( self._node_data['color-scheme'],
