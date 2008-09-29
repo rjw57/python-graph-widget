@@ -40,6 +40,9 @@ class GraphItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 gobject.type_register(GraphItem)
 
 class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
+	''' A GraphModel holds a list of node models and edge models
+		which collectively form a graph. '''
+
 	#__gproperties__ = {
 	#	'color-scheme':	(str, None, None, 'Plum',
 	#		gobject.PARAM_READWRITE),
@@ -52,12 +55,28 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 		self._node_models = goocanvas.GroupModel(parent = self)
 		self._edge_models = goocanvas.GroupModel(parent = self)
 	
+	def get_nodes(self):
+		node_list = []
+		for idx in range(self._node_models.get_n_children()):
+			node_list.append(self._node_models.get_child(idx))
+		return node_list
+	
+	def get_edges(self):
+		edge_list = []
+		for idx in range(self._edge_models.get_n_children()):
+			edge_list.append(self._edge_models.get_child(idx))
+		return edge_list
+	
 	## group methods
 	def do_add_child(self, child, pos):
 		## special cases for nodes and edges - essentially
 		## we're creating a node and edge layer.
 		if(isinstance(child, node.NodeModel)):
 			self._node_models.add_child(child, pos)
+			child.set_graph_model(self)
+		elif(isinstance(child, edge.EdgeModel)):
+			self._edge_models.add_child(child, pos)
+			child.set_graph_model(self)
 		else:
 			goocanvas.GroupModel.do_add_child(self, child, pos)
 

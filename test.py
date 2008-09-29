@@ -30,6 +30,16 @@ class App:
 			x = x, y = y,
 			radius_x = 9, radius_y = 9,
 			width = 300, height = 200)
+
+		graphcanvas.Pad(parent = new_node,
+			name = 'Input node 1', id = 'foo',
+			type = graphcanvas.PadType.INPUT)
+		graphcanvas.Pad(parent = new_node,
+			name = 'Input node 2', id = 'foobas',
+			type = graphcanvas.PadType.INPUT)
+		graphcanvas.Pad(parent = new_node,
+			name = 'Output node 1', id = 'out',
+			type = graphcanvas.PadType.OUTPUT)
 	
 	def new_canvas(self, graph_model):
 		bg_color = 0xBABDB6

@@ -34,14 +34,17 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 	def __init__(self, *args, **kwargs):
 		self._bounds = goocanvas.Bounds()
 		self._color = (1.0, 1.0, 1.0, 0.33)
-		self._resize_data = {
+		self._edge_data = {
 			'start-anchor-x': 0.0,
 			'start-anchor-y': 0.0,
 			'end-anchor-x': 0.0,
 			'end-anchor-y': 0.0,
+			'edge-width': 9.0,
+		}
+
+		self._edge_model_data = {
 			'color-scheme': 'Butter',
 			'invalid-color-scheme': 'Scarlet Red',
-			'edge-width': 9.0,
 		}
 
 		## the start and end pads
@@ -94,24 +97,33 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 
 	## gobject methods
 	def do_get_property(self, pspec):
-		names = self._resize_data.keys()
+		names = self._edge_data.keys()
+		model_names = self._edge_model_data.keys()
 		if(pspec.name in names):
-			return self._resize_data[pspec.name]
+			return self._edge_data[pspec.name]
+		elif(pspec.name in model_names):
+			return self._edge_model_data[pspec.name]
 		else:
 			return goocanvas.ItemSimple.do_get_property(self, pspec)
 	
 	def do_set_property(self, pspec, value):
-		names = self._resize_data.keys()
+		names = self._edge_data.keys()
+		model_names = self._edge_model_data.keys()
 		if(pspec.name in names):
-			self._resize_data[pspec.name] = value
+			self._edge_data[pspec.name] = value
+			self.changed(True)
+		elif(pspec.name in model_names):
+			self._edge_model_data[pspec.name] = value
 			self.changed(True)
 		else:
 			goocanvas.ItemSimple.do_set_property(self, pspec, value)
 	
 	## simple item methods
 	def set_model(self, model):
-		# goocanvas.ItemSimple.do_set_model(self, model)
-		pass
+		goocanvas.ItemSimple.set_model(self, model)
+
+		# so nasty
+		self._edge_model_data = model._edge_data
 	
 	def do_simple_update(self, cr):
 		width = self.get_edge_width()
@@ -190,5 +202,60 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		cr.stroke()
 
 gobject.type_register(EdgeItem)
+
+class EdgeModel(goocanvas.GroupModel, goocanvas.ItemModel):
+	__gproperties__ = {
+		'color-scheme':	(str, None, None, 'Plum',
+			gobject.PARAM_READWRITE),
+		'invalid-color-scheme': ( str, None, None, 'Scarlet Red', 
+			gobject.PARAM_READWRITE ) ,
+		'graph-model': (gobject.TYPE_OBJECT, None, None,
+			gobject.PARAM_READWRITE),
+	}
+
+	def __init__(self, *args, **kwargs):
+		self._edge_data = {
+			'color-scheme': 'Butter',
+			'invalid-color-scheme': 'Scarlet Red',
+			'graph-model': None,
+		}
+
+		goocanvas.GroupModel.__init__(self, *args, **kwargs)
+
+	def get_graph_model(self):
+		return self.get_property('graph-model')
+
+	def set_graph_model(self, value):
+		self.set_property('graph-model', value)
+
+	## gobject methods
+	def do_get_property(self, pspec):
+		propnames = self._edge_data.keys()
+		if(pspec.name in propnames):
+			return self._edge_data[pspec.name]
+		else:
+			raise AttributeError('No such property: %s' % pspec.name)
+
+	def do_set_property(self, pspec, value):
+		propnames = self._edge_data.keys()
+		if(pspec.name in propnames):
+			self._edge_data[pspec.name] = value
+			self.emit('changed', False)
+		else:
+			raise AttributeError('No such property: %s' % pspec.name)
+	
+	## item model methods
+	def do_create_item(self, canvas):
+		item = EdgeItem()
+		item.set_model(self)
+		item.set_canvas(canvas)
+		item.set_properties(
+			start_anchor_x = 10,
+			start_anchor_y = 10,
+			end_anchor_x = 200,
+			end_anchor_y = 100 )
+		return item
+
+gobject.type_register(EdgeModel)
 
 # vim:sw=4:ts=4:autoindent

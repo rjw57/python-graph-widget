@@ -26,6 +26,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			'x': 0.0, 'y': 0.0, 'width': 100.0, 'height': 100.0,
 			'radius-x': 0.0, 'radius-y': 0.0,
 			'color-scheme': 'Plum',
+			'pads': [],
 		}
 
 		self._background_rect = NodeItemFrame( parent = self, x = 0.0, y = 0.0,
@@ -52,29 +53,64 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			self._on_resize_gadget_button_release)
 		self._resize_gadget_size = 15
 
+		self._pad_table = None
+		self._dragging_pad_gadget = False
+		self._update_pad_table()
+
+	def _get_pads_of_type(self, type):
+		out_list = []
+		for pad in self._node_data['pads']:
+			if(pad.get_type() == type):
+				out_list.append(pad)
+		return out_list
+
+	def _update_pad_table(self):
+		if(self._pad_table != None):
+			self.remove_child(self.find_child(self._pad_table))
+			self._pad_table = None
+
 		self._pad_table = goocanvas.Table(parent = self,
 			row_spacing = 4.0)
 		self._pad_labels = []
 		self._pad_gadgets = []
 		self._default_pad_size = 13.0
-		self._dragging_pad_gadget = False
-		for i in range(4):
+
+		## form a list of pads, output first input second
+		pads = self._get_pads_of_type(PadType.OUTPUT)
+		pads.extend(self._get_pads_of_type(PadType.INPUT))
+
+		row_idx = 0
+		for pad_model in pads:
+			type = pad_model.get_type()
+			if(type == PadType.INPUT):
+				xalign = 0.0
+				padcolumn = 0
+				padorient = tango.LEFT
+			else:
+				xalign = 1.0
+				padcolumn = 2
+				padorient = tango.RIGHT
+
+			# Create the label
 			pad_label = goocanvas.Text(parent=self._pad_table, 
-				text='Very Long Pad Label %i' % i,
-				alignment=pango.ALIGN_RIGHT,
+				text=pad_model.get_name(),
 				pointer_events=goocanvas.EVENTS_NONE,
 				ellipsize=pango.ELLIPSIZE_START,
 				font='Sans 12',
-				fill_color = 'blue',
 				x=0.0, y=0.0)
 			self._pad_labels.append(pad_label)
 			self._pad_table.set_child_properties(pad_label, \
-				row = i, column = 0, x_expand = True, x_fill = True,
-				left_padding = 4.0,
-				x_shrink = True)
+				row = row_idx, column = 1, x_expand = True, 
+				left_padding = 4.0, right_padding = 4.0,
+				x_shrink = True, x_align = xalign)
+
+			# Create tha pad itself
 			pad_gadget = padgadget.PadGadget(parent=self._pad_table, 
-				x=0.0, y=0.0, width=20.0, height=self._default_pad_size,
+				x=0.0, y=0.0, 
+				width=self._default_pad_size,
+				height=self._default_pad_size,
 				pad_size=self._default_pad_size,
+				orientation=padorient,
 				pointer_events = goocanvas.EVENTS_ALL)
 			pad_gadget.connect("motion_notify_event", 
 				self._on_pad_gadget_motion_notify)
@@ -84,12 +120,14 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 				self._on_pad_gadget_button_release)
 			self._pad_gadgets.append(pad_gadget)
 			self._pad_table.set_child_properties(pad_gadget, \
-				row = i, column = 1)
+				row = row_idx, column = padcolumn)
+
+			row_idx += 1
 
 		foo = gtk.Button('Hello')
 		foo_item = goocanvas.Widget(parent = self._pad_table, widget = foo)
 		self._pad_table.set_child_properties(foo_item, row = 4, column = 0,
-			columns = 2, x_fill = True,
+			columns = 3, x_fill = True,
 			left_padding = 6.0, right_padding = 6.0)
 
 	def do_update(self, entire_tree, cr):
@@ -129,8 +167,10 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 
 		## update the requested width and height ignoring the minimum width
 		## because the pads ellipsize.
-		# self._node_data['width'] = max(self._node_data['width'], minimum_width)
-		self._node_data['height'] = max(self._node_data['height'], minimum_height)
+		# self._node_data['width'] = max(self._node_data['width'],
+		#	minimum_width)
+		self._node_data['height'] = max(self._node_data['height'], 
+			minimum_height)
 
 		## update all the properties for the background.
 		propnames = ('width', 'height', 'radius-x',
@@ -150,9 +190,10 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 
 		## update the position and size of the pad table. It extends
 		## horizontally to the edge of the item.
-		self._pad_table.translate(0.0, content_rect.y1 + vertical_padding)
-		self._pad_table.set_property('width', self._node_data['width']+1)
-		self._pad_table.set_property('height', content_rect.y2 - content_rect.y1)
+		self._pad_table.translate(-1, content_rect.y1 + vertical_padding)
+		self._pad_table.set_property('width', self._node_data['width']+2)
+		self._pad_table.set_property('height', 
+			content_rect.y2 - content_rect.y1)
 		self._pad_table.update(entire_tree, cr, goocanvas.Bounds())
 
 		## Put the resize gadget in the lower-right
@@ -222,9 +263,11 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._dragging_pad_gadget = False
 
 		# see if the edge is valid (and hence should be 
-		# added to the model).
-		if(self._temporary_edge_item.is_valid()):
-			print('ooh - it\'s valid!')
+		# added to the model, should we have one).
+		model = self.get_model()
+		graph_model = model.get_graph_model()
+		if((model != None) and (self._temporary_edge_item.is_valid())):
+			edge_model = edge.EdgeModel(parent = graph_model)
 
 		# Remove the temporary edge
 		temp_parent = self._temporary_edge_item.get_parent()
@@ -310,7 +353,12 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 
 	def _on_model_changed(self, model, recompute_bounds):
 		self._needs_update = True
-		self.request_update()
+		self.changed(recompute_bounds)
+	
+	def _on_pad_added(self, model, pad):
+		self._update_pad_table()
+		self._needs_update = True
+		self.changed(True)
 	
 	## simple item methods
 	def set_model(self, model):
@@ -320,8 +368,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._node_data = model._node_data
 
 		model.connect('changed', self._on_model_changed)
-		self.request_update()
-	
+		model.connect('pad-added', self._on_pad_added)
+		self._update_pad_table()
+		self._on_model_changed(model, True)
 
 gobject.type_register(NodeItem)
 
@@ -469,6 +518,65 @@ class NodeItemFrame(tangocanvas.TangoRectItem, goocanvas.Item):
 
 gobject.type_register(NodeItemFrame)
 
+class PadType:
+	## A pad is either an input or an output pad
+	INPUT, OUTPUT = range(2)
+
+class Pad(goocanvas.ItemModelSimple, goocanvas.ItemModel):
+
+	__gproperties__ = {
+		'name': (str, None, None, 'Untitled',
+			gobject.PARAM_READWRITE),
+		'id': (str, None, None, 'untitled',
+			gobject.PARAM_READWRITE),
+		'type': (int, None, None, 0, 1, PadType.INPUT,
+			gobject.PARAM_READWRITE),
+		'parent': (gobject.TYPE_OBJECT, None, None,
+			gobject.PARAM_READWRITE),
+	}
+
+	def __init__(self, *args, **kwargs):
+		self._pad_data = {
+			'name': 'Untitled',
+			'id': 'untitled',
+			'type': PadType.INPUT,
+			'parent': None,
+		}
+		gobject.GObject.__init__(self, *args, **kwargs)
+	
+	def get_name(self):
+		return self.get_property('name')
+	
+	def get_id(self):
+		return self.get_property('id')
+	
+	def get_type(self):
+		return self.get_property('type')
+	
+	def get_parent(self):
+		return self.get_property('parent')
+
+	## gobject methods
+	def do_get_property(self, pspec):
+		propnames = self._pad_data.keys()
+		if(pspec.name in propnames):
+			return self._pad_data[pspec.name]
+		else:
+			raise AttributeError('No such property: %s' % pspec.name)
+
+	def do_set_property(self, pspec, value):
+		propnames = self._pad_data.keys()
+		if(pspec.name in propnames):
+			self._pad_data[pspec.name] = value
+			self.emit('changed', False)
+		else:
+			raise AttributeError('No such property: %s' % pspec.name)
+
+		if(pspec.name == 'parent'):
+			value.add_pad(self)
+
+gobject.type_register(Pad)
+
 class NodeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 	__gproperties__ = {
 		'node-title':	(str, None, None, 'Node',
@@ -493,6 +601,13 @@ class NodeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			0.0, gobject.PARAM_READWRITE),
 		'color-scheme':	(str, None, None, 'Plum',
 			gobject.PARAM_READWRITE),
+		'graph-model': (gobject.TYPE_OBJECT, None, None,
+			gobject.PARAM_READWRITE),
+	}
+
+	__gsignals__ = {
+		'pad-added': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+			(gobject.TYPE_OBJECT,)),
 	}
 
 	def __init__(self, *args, **kwargs):
@@ -501,9 +616,21 @@ class NodeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			'x': 0.0, 'y': 0.0, 'width': 100.0, 'height': 100.0,
 			'radius-x': 0.0, 'radius-y': 0.0,
 			'color-scheme': 'Plum',
+			'graph-model': None,
+			'pads': [],
 		}
 
 		goocanvas.GroupModel.__init__(self, *args, **kwargs)
+
+	def get_graph_model(self):
+		return self.get_property('graph-model')
+
+	def set_graph_model(self, value):
+		self.set_property('graph-model', value)
+	
+	def add_pad(self, pad):
+		self._node_data['pads'].append(pad)
+		self.emit('pad-added', pad)
 
 	## gobject methods
 	def do_get_property(self, pspec):
@@ -517,7 +644,7 @@ class NodeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 		propnames = self._node_data.keys()
 		if(pspec.name in propnames):
 			self._node_data[pspec.name] = value
-			self.emit('changed', False)
+			self.emit('changed', True)
 		else:
 			raise AttributeError('No such property: %s' % pspec.name)
 	
