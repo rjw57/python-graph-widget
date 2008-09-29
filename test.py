@@ -25,6 +25,7 @@ class App:
 	def new_node(self, x, y):
 		new_node = graphcanvas.NodeModel(
 		#new_node = tangocanvas.TangoRectModel(
+			node_title = 'Filter',
 			color_scheme = 'Dark Aluminium',
 			parent = self._model,
 			x = x, y = y,
