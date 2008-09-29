@@ -143,7 +143,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		## update the position and size of the pad table. It extends
 		## horizontally to the edge of the item.
 		self._pad_table.translate(0.0, content_rect.y1 + vertical_padding)
-		self._pad_table.set_property('width', self._node_data['width'])
+		self._pad_table.set_property('width', self._node_data['width']+1)
 		self._pad_table.set_property('height', content_rect.y2 - content_rect.y1)
 		self._pad_table.update(entire_tree, cr, goocanvas.Bounds())
 

@@ -91,6 +91,10 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 		tango.paint_pad(cr, self.get_color_scheme(), x, y,
 			self.get_orientation(), self.get_pad_size(),
 			self._highlight_flag)
+
+		#cairoutils.rounded_rect(cr, self._get_internal_bounds(), 0, 0)
+		#cr.set_source_rgb(1,0,0)
+		#cr.fill()
 	
 	def _get_pad_location(self):
 		int_bounds = self._get_internal_bounds()
