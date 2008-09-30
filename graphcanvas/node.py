@@ -297,14 +297,19 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		if(event.button == 1): # left button
 			# check target is an output pad
 			pad_model = target.get_pad_model()
+			pad_type = pad_model.get_property('type')
 
-			if((pad_model == None) or
-				(pad_model.get_property('type') != padgadget.OUTPUT)):
+			if(pad_model == None):
+				return
+
+			# If this is an input pad, see if it is connected already
+			if((pad_type == padgadget.INPUT) and 
+				(pad_model.get_n_connected_edges() == 0)):
 				return
 
 			root_item = self.get_canvas().get_root_item()
 			pad_anchor = target.get_pad_anchor()
-		   	event_point = self.get_canvas().\
+			event_point = self.get_canvas().\
 				convert_from_item_space(target, event.x, event.y)
 			canvas_space_anchor = self.get_canvas().\
 				convert_from_item_space(target, *pad_anchor)
@@ -312,12 +317,28 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 				parent = root_item,
 				pointer_events = goocanvas.EVENTS_NONE,
 				edge_width = self._default_pad_size - 4.0) 
-			self._temporary_edge_item.set_start_anchor(*canvas_space_anchor)
-			self._temporary_edge_item.set_end_anchor(*event_point)
-			root_item.ensure_updated()
 
-			## record what the start pad is
-			self._edge_start_pad_model = target.get_pad_model()
+			if(pad_type == padgadget.INPUT):
+				connected_edge_model = pad_model.get_connected_edges()[0]
+				graph_model = self.get_model().get_graph_model()
+				connected_edge_model_idx = graph_model.find_edge(connected_edge_model)
+				graph_model.remove_edge(connected_edge_model_idx)
+
+				start_pad = connected_edge_model.get_property('start-pad')
+				start_anchor = self.get_graph_item().get_pad_anchor(start_pad)
+				self._temporary_edge_item.set_start_anchor(*start_anchor)
+				self._temporary_edge_item.set_end_anchor(*event_point)
+
+				## record what the start pad is
+				self._edge_start_pad_model = start_pad
+			else:
+				self._temporary_edge_item.set_start_anchor(*canvas_space_anchor)
+				self._temporary_edge_item.set_end_anchor(*event_point)
+
+				## record what the start pad is
+				self._edge_start_pad_model = target.get_pad_model()
+
+			root_item.ensure_updated()
 
 			fleur = gtk.gdk.Cursor (gtk.gdk.FLEUR)
 			canvas = item.get_canvas ()

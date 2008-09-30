@@ -83,11 +83,11 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 	def move_node(self, old_idx, new_idx):
 		return self._edge_models.move_child(old_idx, new_idx)
 	
-	def find_node(self, node):
-		if(not isinstance(node, node.NodeModel)):
+	def find_node(self, node_model):
+		if(not isinstance(node_model, node.NodeModel)):
 			raise TypeError('node must be instance of NodeModel.')
 		for idx in range(self.get_n_nodes()):
-			if(self.get_node(idx) == node):
+			if(self.get_node(idx) == node_model):
 				return idx
 		return -1
 	
@@ -110,11 +110,11 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 	def move_edge(self, old_idx, new_idx):
 		return self._edge_models.move_child(old_idx, new_idx)
 	
-	def find_edge(self, edge):
-		if(not isinstance(edge, edge.EdgeModel)):
+	def find_edge(self, edge_model):
+		if(not isinstance(edge_model, edge.EdgeModel)):
 			raise TypeError('edge must be instance of EdgeModel.')
 		for idx in range(self.get_n_edges()):
-			if(self.get_edge(idx) == edge):
+			if(self.get_edge(idx) == edge_model):
 				return idx
 		return -1
 	
