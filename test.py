@@ -39,7 +39,7 @@ class App:
 			parent = self._model,
 			x = x, y = y,
 			radius_x = 9, radius_y = 9,
-			width = 300, height = 200)
+			width = -1, height = -1)
 
 	def new_canvas(self, graph_model):
 		bg_color = 0xBABDB6

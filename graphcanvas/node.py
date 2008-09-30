@@ -161,15 +161,6 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			goocanvas.Group.do_update(self, entire_tree, cr, out_bounds)
 			return out_bounds
 
-		## find the minimum width and height for the node frame.
-		minimum_bounds = self._background_rect. \
-			get_bounds_for_desired_content_bounds(cr, goocanvas.Bounds(0,0,0,0))
-		(minimum_width, minimum_height) = boundsutils.get_size(minimum_bounds)
-
-		## update the requested width and height.
-		self._node_data['width'] = max(self._node_data['width'], minimum_width)
-		self._node_data['height'] = max(self._node_data['height'], minimum_height)
-
 		## attempt to set the width and height of the pad table to automatic
 		content_rect = self._background_rect.get_content_area_bounds()
 		self._pad_table.set_property('width', -1)
@@ -179,6 +170,26 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		## get the requested bounds of the pad table
 		pad_req = goocanvas.Bounds()
 		self._pad_table.get_requested_area(cr, pad_req)
+
+		## and hence the minimum comfortable size of the node
+		comfortable_bounds = self._background_rect. \
+			get_bounds_for_desired_content_bounds(cr, pad_req)
+		comfortable_size = boundsutils.get_size(comfortable_bounds)
+
+		## see if we're set to use the automagic width and height
+		if(self._node_data['width'] < 0.0):
+			self._node_data['width'] = comfortable_size[0]
+		if(self._node_data['height'] < 0.0):
+			self._node_data['height'] = comfortable_size[1]
+
+		## find the minimum width and height for the node frame.
+		minimum_bounds = self._background_rect. \
+			get_bounds_for_desired_content_bounds(cr, goocanvas.Bounds(0,0,0,0))
+		(minimum_width, minimum_height) = boundsutils.get_size(minimum_bounds)
+
+		## update the requested width and height.
+		self._node_data['width'] = max(self._node_data['width'], minimum_width)
+		self._node_data['height'] = max(self._node_data['height'], minimum_height)
 
 		## update the minimum bounds
 		minimum_bounds = self._background_rect. \
@@ -190,10 +201,8 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		minimum_height += math.ceil(0.5 * self._resize_gadget_size) + \
 			2.0*vertical_padding
 
-		## update the requested width and height ignoring the minimum width
+		## update the requested height ignoring the minimum width
 		## because the pads ellipsize.
-		# self._node_data['width'] = max(self._node_data['width'],
-		#	minimum_width)
 		self._node_data['height'] = max(self._node_data['height'], 
 			minimum_height)
 
@@ -601,10 +610,10 @@ class NodeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			-gobject.G_MAXDOUBLE, gobject.G_MAXFLOAT,
 			0.0, gobject.PARAM_READWRITE),
 		'width': (gobject.TYPE_DOUBLE, None, None, 
-			0.0, gobject.G_MAXDOUBLE,
+			-1, gobject.G_MAXDOUBLE,
 			100.0, gobject.PARAM_READWRITE),
 		'height': (gobject.TYPE_DOUBLE, None, None,
-			0.0, gobject.G_MAXDOUBLE,
+			-1, gobject.G_MAXDOUBLE,
 			100.0, gobject.PARAM_READWRITE),
 		'radius-x': (gobject.TYPE_DOUBLE, None, None, 
 			0.0, gobject.G_MAXDOUBLE,
