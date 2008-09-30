@@ -198,7 +198,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 
 		## add in the resize gadget and the vertical padding
 		vertical_padding = 6.0
-		minimum_height += math.ceil(0.5 * self._resize_gadget_size) + \
+		minimum_height += math.ceil(0.2 * self._resize_gadget_size) + \
 			2.0*vertical_padding
 
 		## update the requested height ignoring the minimum width
