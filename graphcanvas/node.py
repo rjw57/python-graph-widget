@@ -346,9 +346,8 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		model = self.get_model()
 		graph_model = model.get_graph_model()
 		if((model != None) and (self._temporary_edge_item.is_valid())):
-			edge_model = edge.EdgeModel(parent = graph_model,
-			start_pad = self._edge_start_pad_model,
-			end_pad = mouse_pad.get_pad_model())
+			edge_model = model.create_edge_model(
+				self._edge_start_pad_model, mouse_pad.get_pad_model())
 
 		# Remove the temporary edge
 		temp_parent = self._temporary_edge_item.get_parent()
@@ -641,44 +640,35 @@ class NodeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			'graph-model': None,
 		}
 
-		self._input_pads = [
-			padgadget.PadModel(type = padgadget.INPUT, label = 'Input A'), 
-			padgadget.PadModel(type = padgadget.INPUT, label = 'Input B'), 
-			padgadget.PadModel(type = padgadget.INPUT, label = 'Input C'), 
-		]
-		self._output_pads = [
-			padgadget.PadModel(type = padgadget.OUTPUT, label = 'Output A'), 
-			padgadget.PadModel(type = padgadget.OUTPUT, label = 'Output B'), 
-		]
-
 		goocanvas.GroupModel.__init__(self, *args, **kwargs)
+	
+	## edge factory method
+	def create_edge_model(self, start_pad, end_pad):
+		return edge.EdgeModel(parent = self.get_graph_model(),
+			start_pad = start_pad, end_pad = end_pad)
+	
+	## pad query methods
+	def get_n_output_pads(self):
+		''' return the number of output pads this node has '''
+		return 0
+	
+	def get_output_pad(self, idx):
+		''' return the padgadget.PadModel object drescribing the idx'th output pad. '''
+		return None
+
+	def get_n_input_pads(self):
+		''' return the number of input pads this node has '''
+		return 0
+	
+	def get_input_pad(self, idx):
+		''' return the padgadget.PadModel object drescribing the idx'th input pad. '''
+		return None
 
 	def get_graph_model(self):
 		return self.get_property('graph-model')
 
 	def set_graph_model(self, value):
 		self.set_property('graph-model', value)
-	
-	def add_pad(self, pad):
-		self._node_data['pads'].append(pad)
-		self.emit('pads-changed', pad)
-	
-	## pad query methods
-	def get_n_output_pads(self):
-		''' return the number of output pads this node has '''
-		return len(self._output_pads)
-	
-	def get_output_pad(self, idx):
-		''' return the padgadget.PadModel object drescribing the idx'th output pad. '''
-		return self._output_pads[idx]
-
-	def get_n_input_pads(self):
-		''' return the number of input pads this node has '''
-		return len(self._input_pads)
-	
-	def get_input_pad(self, idx):
-		''' return the padgadget.PadModel object drescribing the idx'th input pad. '''
-		return self._input_pads[idx]
 	
 	## gobject methods
 	def do_get_property(self, pspec):

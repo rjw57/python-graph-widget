@@ -43,6 +43,13 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 		node group.
 		'''
 
+	__gsignals__ = {
+		'node-added': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+			(gobject.TYPE_OBJECT,)),
+		'edge-added': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+			(gobject.TYPE_OBJECT,)),
+	}
+
 	def __init__(self, *args, **kwargs):
 		goocanvas.GroupModel.__init__(self, *args, **kwargs)
 
@@ -76,9 +83,11 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 		if(isinstance(child, node.NodeModel)):
 			self._node_models.add_child(child, pos)
 			child.set_graph_model(self)
+			self.emit('node-added', child)
 		elif(isinstance(child, edge.EdgeModel)):
 			self._edge_models.add_child(child, pos)
 			child.set_graph_model(self)
+			self.emit('edge-added', child)
 		else:
 			goocanvas.GroupModel.do_add_child(self, child, pos)
 

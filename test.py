@@ -12,7 +12,38 @@ import os
 import math
 
 import graphcanvas
-from graphcanvas import tangocanvas
+
+class MyNode(graphcanvas.NodeModel, goocanvas.ItemModel):
+	def __init__(self, *args, **kwargs):
+		self._input_pads = [
+			graphcanvas.PadModel(type = graphcanvas.INPUT, 
+				label = 'Input A'), 
+			graphcanvas.PadModel(type = graphcanvas.INPUT, 
+				label = 'Input B'), 
+			graphcanvas.PadModel(type = graphcanvas.INPUT,
+				label = 'Input C'), 
+		]
+		self._output_pads = [
+			graphcanvas.PadModel(type = graphcanvas.OUTPUT, 
+				label = 'Output A'), 
+			graphcanvas.PadModel(type = graphcanvas.OUTPUT,
+				label = 'Output B'), 
+		]
+
+		graphcanvas.NodeModel.__init__(self, *args, **kwargs)
+	
+	## pad query methods
+	def get_n_output_pads(self):
+		return len(self._output_pads)
+	
+	def get_output_pad(self, idx):
+		return self._output_pads[idx]
+
+	def get_n_input_pads(self):
+		return len(self._input_pads)
+	
+	def get_input_pad(self, idx):
+		return self._input_pads[idx]
 
 class App:
 	def clearup(self):
@@ -32,10 +63,9 @@ class App:
 		canvas.set_scale(scale * mult)
 
 	def new_node(self, x, y):
-		new_node = graphcanvas.NodeModel(
-		#new_node = tangocanvas.TangoRectModel(
+		new_node = MyNode(
 			node_title = 'Filter',
-			color_scheme = 'Dark Aluminium',
+			color_scheme = 'Sky Blue',
 			parent = self._model,
 			x = x, y = y,
 			radius_x = 9, radius_y = 9,
