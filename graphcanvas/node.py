@@ -644,7 +644,8 @@ class NodeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 	
 	## edge factory method
 	def create_edge_model(self, start_pad, end_pad):
-		return edge.EdgeModel(parent = self.get_graph_model(),
+		return edge.EdgeModel(self.get_graph_model(),
+			parent = self.get_graph_model(),
 			start_pad = start_pad, end_pad = end_pad)
 	
 	## pad query methods

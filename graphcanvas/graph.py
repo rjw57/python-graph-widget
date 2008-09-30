@@ -48,6 +48,10 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			(gobject.TYPE_OBJECT,)),
 		'edge-added': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
 			(gobject.TYPE_OBJECT,)),
+		'node-removed': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+			(gobject.TYPE_OBJECT,)),
+		'edge-removed': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+			(gobject.TYPE_OBJECT,)),
 	}
 
 	def __init__(self, *args, **kwargs):
@@ -60,21 +64,59 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 		## a list of canvases and the items we created on them
 		self._canvas_item_map = { }
 	
-	def get_nodes(self):
-		''' Return a list of NodeModel instances which describe the
-		    current nodes. '''
-		node_list = []
-		for idx in range(self._node_models.get_n_children()):
-			node_list.append(self._node_models.get_child(idx))
-		return node_list
+	## node manipulation
+	def add_node(self, node, pos):
+		if(not isinstance(node, node.NodeModel)):
+			raise TypeError('node must be instance of NodeModel.')
+		self.add_child(node, pos)
 	
-	def get_edges(self):
-		''' Return a list of EdgeModel instances which describe the
-		    current edge. '''
-		edge_list = []
-		for idx in range(self._edge_models.get_n_children()):
-			edge_list.append(self._edge_models.get_child(idx))
-		return edge_list
+	def get_n_nodes(self):
+		return self._edge_models.get_n_children()
+	
+	def get_node(self, node_idx):
+		return self._edge_models.get_child(node_idx)
+	
+	def remove_node(self, node_idx):
+		self.emit('node-removed', self.get_node(edge_idx))
+		return self._edge_models.remove_child(node_idx)
+	
+	def move_node(self, old_idx, new_idx):
+		return self._edge_models.move_child(old_idx, new_idx)
+	
+	def find_node(self, node):
+		if(not isinstance(node, node.NodeModel)):
+			raise TypeError('node must be instance of NodeModel.')
+		for idx in range(self.get_n_nodes()):
+			if(self.get_node(idx) == node):
+				return idx
+		return -1
+	
+	## edge manipulation
+	def add_edge(self, edge, pos):
+		if(not isinstance(edge, edge.EdgeModel)):
+			raise TypeError('edge must be instance of EdgeModel.')
+		self.add_child(edge, pos)
+	
+	def get_n_edges(self):
+		return self._edge_models.get_n_children()
+	
+	def get_edge(self, edge_idx):
+		return self._edge_models.get_child(edge_idx)
+	
+	def remove_edge(self, edge_idx):
+		self.emit('edge-removed', self.get_edge(edge_idx))
+		return self._edge_models.remove_child(edge_idx)
+	
+	def move_edge(self, old_idx, new_idx):
+		return self._edge_models.move_child(old_idx, new_idx)
+	
+	def find_edge(self, edge):
+		if(not isinstance(edge, edge.EdgeModel)):
+			raise TypeError('edge must be instance of EdgeModel.')
+		for idx in range(self.get_n_edges()):
+			if(self.get_edge(idx) == edge):
+				return idx
+		return -1
 	
 	## group methods
 	def do_add_child(self, child, pos):
@@ -86,7 +128,6 @@ class GraphModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			self.emit('node-added', child)
 		elif(isinstance(child, edge.EdgeModel)):
 			self._edge_models.add_child(child, pos)
-			child.set_graph_model(self)
 			self.emit('edge-added', child)
 		else:
 			goocanvas.GroupModel.do_add_child(self, child, pos)

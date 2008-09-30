@@ -164,10 +164,54 @@ class PadModel(gobject.GObject):
 			'name': 'untitled',
 			'type': INPUT,
 			'parent': None,
+			'graph': None,
 		}
 		self._anchor_location = (0, 0)
 		self._model = None
+		
+		self._connected_edge_list = [ ]
+		self._connected_edge_changed_handlers = { }
+
+		self._graph_model = None
+
 		gobject.GObject.__init__(self, *args, **kwargs)
+	
+	def get_n_connected_edges(self):
+		return len(self._connected_edge_list)
+	
+	def get_connected_edges(self):
+		return self._connected_edge_list
+	
+	def connected_to_edge(self, edge_model):
+		graph_model = edge_model.get_graph_model()
+		if(self._graph_model == None):
+			self._graph_model = graph_model
+			graph_model.connect('edge-removed', self._on_edge_removed)
+		elif(self._graph_model != graph_model):
+			raise ValueError('Attempt to connect pad to edge of different model.')
+		elif(graph_model == None):
+			raise ValueError('Edge has null graph model.')
+
+		self._connected_edge_list.append(edge_model)
+		handler_id = edge_model.connect('changed', self._on_edge_changed)
+		self._connected_edge_changed_handlers[edge_model] = handler_id
+	
+	def disconnected_from_edge(self, edge_model):
+		if(not edge_model in self._connected_edge_list):
+			return
+		self._connected_edge_list.remove(edge_model)
+		edge_model.disconnect( \
+			self._connected_edge_changed_handlers.pop(edge_model))
+	
+	def _on_edge_removed(self, graph, edge):
+		self.disconnected_from_edge(edge)
+
+	def _on_edge_changed(self, edge_model, recalculate_bounds):
+		pads = (
+			edge_model.get_property('start-pad'), 
+			edge_model.get_property('end-pad') )
+		if(not self in pads):
+			self.disconnected_from_edge(edge_model)
 	
 	## gobject methods
 	def do_get_property(self, pspec):

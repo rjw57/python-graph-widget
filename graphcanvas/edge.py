@@ -102,12 +102,11 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		''' Work out if this edge is valid based on whether
 		    there is a pad under the start and end anchor. '''
 
-		## if we have a model, use that to get the start and end
-		## pad models, otherwise use the canvas get_items_at calls
+		## if we have a model, ask it whether or not we're valid
 		model = self.get_model()
+
 		if(model != None):
-			start_pad_model = model.get_property('start-pad')
-			end_pad_model = model.get_property('end-pad')
+			return model.is_valid()
 		else:
 			start = self.get_start_anchor()
 			end = self.get_end_anchor()
@@ -132,6 +131,11 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		if(start_pad_model.get_property('type') != padgadget.OUTPUT):
 			return False
 		if(end_pad_model.get_property('type') != padgadget.INPUT):
+			return False
+
+		## if the end pad already has a connection, the edge is 
+		## invalid - i.e. inputs can only have one connection.
+		if(end_pad_model.get_n_connected_edges() > 0):
 			return False
 
 		return True
@@ -294,22 +298,22 @@ class EdgeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			gobject.PARAM_READWRITE),
 	}
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, graph_model, *args, **kwargs):
 		self._edge_data = {
 			'color-scheme': 'Butter',
 			'invalid-color-scheme': 'Scarlet Red',
-			'graph-model': None,
+			'graph-model': graph_model,
 			'start-pad': None,
 			'end-pad': None,
 		}
 
 		goocanvas.GroupModel.__init__(self, *args, **kwargs)
+	
+	def is_valid(self):
+		return True
 
 	def get_graph_model(self):
 		return self.get_property('graph-model')
-
-	def set_graph_model(self, value):
-		self.set_property('graph-model', value)
 
 	## gobject methods
 	def do_get_property(self, pspec):
@@ -326,6 +330,10 @@ class EdgeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 			self.emit('changed', False)
 		else:
 			raise AttributeError('No such property: %s' % pspec.name)
+
+		if(pspec.name in ('start-pad', 'end-pad')):
+			# Tell the pad it's been connected
+			value.connected_to_edge(self)
 	
 	## item model methods
 	def do_create_item(self, canvas):
