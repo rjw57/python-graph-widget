@@ -138,4 +138,54 @@ class PadGadget(goocanvas.Rect, simple.SimpleItem, goocanvas.Item):
 
 gobject.type_register(PadGadget)
 
+## A pad is either an input or an output pad
+INPUT, OUTPUT = range(2)
+
+class PadModel(gobject.GObject):
+	__gproperties__ = {
+		'label': (str, 'Human readable pad name', None, 'Untitled',
+			gobject.PARAM_READWRITE),
+		'name': (str, 'Unique identifier for pad', None, 'untitled',
+			gobject.PARAM_READWRITE),
+		'type': (int, 'PAd type (input/output)', None, 0, 1, INPUT,
+			gobject.PARAM_READWRITE),
+		'parent': (gobject.TYPE_OBJECT, 'Pad\'s NodeModel parent', None,
+			gobject.PARAM_READWRITE),
+	}
+
+	__gsignals__ = {
+		'anchor-moved': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, []),
+		'changed': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, []),
+	}
+
+	def __init__(self, *args, **kwargs):
+		self._pad_data = {
+			'label': 'Untitled',
+			'name': 'untitled',
+			'type': INPUT,
+			'parent': None,
+		}
+		self._anchor_location = (0, 0)
+		self._model = None
+		gobject.GObject.__init__(self, *args, **kwargs)
+	
+	## gobject methods
+	def do_get_property(self, pspec):
+		propnames = self._pad_data.keys()
+		if(pspec.name in propnames):
+			return self._pad_data[pspec.name]
+		else:
+			raise AttributeError('No such property: %s' % pspec.name)
+
+	def do_set_property(self, pspec, value):
+		propnames = self._pad_data.keys()
+		if(pspec.name in propnames):
+			self._pad_data[pspec.name] = value
+			self.emit('changed')
+		else:
+			raise AttributeError('No such property: %s' % pspec.name)
+
+gobject.type_register(PadModel)
+
+
 # vim:sw=4:ts=4:autoindent

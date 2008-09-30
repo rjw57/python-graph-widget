@@ -9,6 +9,11 @@ import math
 import padgadget
 
 class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
+	''' An edge item represents an edge in the graph. It joins a start
+	    anchor location to an end anchor location. If it has an associated
+		GraphItem and EdgeModel, this will be used to automatically move the
+		anchors to match the pads specified in the EdgeModel. '''
+
 	__gproperties__ = {
 		'start-anchor-x': ( float, None, None, 
 			-gobject.G_MAXFLOAT, gobject.G_MAXFLOAT, 0.0,
@@ -33,7 +38,8 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 
 	def __init__(self, *args, **kwargs):
 		self._bounds = goocanvas.Bounds()
-		self._color = (1.0, 1.0, 1.0, 0.33)
+
+		## EdgeItem only properties.
 		self._edge_data = {
 			'start-anchor-x': 0.0,
 			'start-anchor-y': 0.0,
@@ -42,6 +48,7 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 			'edge-width': 9.0,
 		}
 
+		## Shared EdgeModel and EdgeItem properties.
 		self._edge_model_data = {
 			'color-scheme': 'Butter',
 			'invalid-color-scheme': 'Scarlet Red',
@@ -53,6 +60,9 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		## the start and end pad items
 		self._start_pad = None
 		self._end_pad = None
+
+		## the parent GraphItem
+		self._graph_item = None
 
 		goocanvas.ItemSimple.__init__(self, *args, **kwargs)
 
@@ -100,6 +110,14 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		self._start_pad = self._get_pad_at(*start)
 		self._end_pad = self._get_pad_at(*end)
 		return (self._start_pad != None) and (self._end_pad != None)
+	
+	def get_graph_item(self):
+		return self._graph_item
+	
+	def set_graph_item(self, graph):
+		self._graph_item = graph
+		graph.connect('pad-anchor-changed', self._on_pad_anchor_changed)
+		self._update_anchor_locations()
 
 	## gobject methods
 	def do_get_property(self, pspec):
@@ -130,23 +148,32 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 
 		# so nasty
 		self._edge_model_data = model._edge_data
+
 		model.connect('changed', self._on_model_changed)
 		self._on_model_changed(model, True)
 	
-	def _on_pad_anchor_changed(self, pad_model):
+	def _on_pad_anchor_changed(self, graph, pad_model, x, y):
 		model = self.get_model()
-		self._update_anchor_locations(model)
+		if(model == None):
+			return
+		start_pad_model = model.get_property('start-pad')
+		end_pad_model = model.get_property('end-pad')
+		if((pad_model != start_pad_model) and (pad_model != end_pad_model)):
+			return
+		self._update_anchor_locations()
 	
-	def _update_anchor_locations(self, model):
-		if(model != None):
+	def _update_anchor_locations(self):
+		graph_item = self.get_graph_item()
+		model = self.get_model()
+		if((model != None) and (graph_item != None)):
 			start_pad_model = model.get_property('start-pad')
 			end_pad_model = model.get_property('end-pad')
 			if(end_pad_model != None):
-				loc = end_pad_model.get_anchor_location()
+				loc = graph_item.get_pad_anchor(end_pad_model)
 				self.set_property('end-anchor-x', loc[0])
 				self.set_property('end-anchor-y', loc[1])
 			if(start_pad_model != None):
-				loc = start_pad_model.get_anchor_location()
+				loc = graph_item.get_pad_anchor(start_pad_model)
 				self.set_property('start-anchor-x', loc[0])
 				self.set_property('start-anchor-y', loc[1])
 		self.changed(True)
@@ -155,13 +182,7 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 		if(model != None):
 			start_pad = model.get_property('start-pad')
 			end_pad = model.get_property('end-pad')
-			assert start_pad != None
-			assert end_pad != None
-			start_pad.connect('anchor-moved', 
-				self._on_pad_anchor_changed)
-			end_pad.connect('anchor-moved', 
-				self._on_pad_anchor_changed)
-			self._update_anchor_locations(model)
+			self._update_anchor_locations()
 		self.changed(True)
 	
 	def do_simple_update(self, cr):
@@ -285,12 +306,6 @@ class EdgeModel(goocanvas.GroupModel, goocanvas.ItemModel):
 	def do_create_item(self, canvas):
 		item = EdgeItem()
 		item.set_canvas(canvas)
-		item.set_properties(
-			pointer_events = goocanvas.EVENTS_NONE,
-			start_anchor_x = 10,
-			start_anchor_y = 10,
-			end_anchor_x = 200,
-			end_anchor_y = 100 )
 		item.set_model(self)
 		return item
 
