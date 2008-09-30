@@ -57,10 +57,6 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 			'end-pad': None,
 		}
 
-		## the start and end pad items
-		self._start_pad = None
-		self._end_pad = None
-
 		## the parent GraphItem
 		self._graph_item = None
 
@@ -105,11 +101,40 @@ class EdgeItem(goocanvas.ItemSimple, simple.SimpleItem, goocanvas.Item):
 	def is_valid(self):
 		''' Work out if this edge is valid based on whether
 		    there is a pad under the start and end anchor. '''
-		start = self.get_start_anchor()
-		end = self.get_end_anchor()
-		self._start_pad = self._get_pad_at(*start)
-		self._end_pad = self._get_pad_at(*end)
-		return (self._start_pad != None) and (self._end_pad != None)
+
+		## if we have a model, use that to get the start and end
+		## pad models, otherwise use the canvas get_items_at calls
+		model = self.get_model()
+		if(model != None):
+			start_pad_model = model.get_property('start-pad')
+			end_pad_model = model.get_property('end-pad')
+		else:
+			start = self.get_start_anchor()
+			end = self.get_end_anchor()
+			start_pad = self._get_pad_at(*start)
+			end_pad = self._get_pad_at(*end)
+
+			if(start_pad != None):
+				start_pad_model = start_pad.get_pad_model()
+			else:
+				start_pad_model = None
+
+			if(end_pad != None):
+				end_pad_model = end_pad.get_pad_model()
+			else:
+				end_pad_model = None
+
+		## if there isn't a pad at both ends, edge is invalid
+		if((end_pad_model == None) or (start_pad_model == None)):
+			return False
+
+		## if either end is wrong type, pad is invalid
+		if(start_pad_model.get_property('type') != padgadget.OUTPUT):
+			return False
+		if(end_pad_model.get_property('type') != padgadget.INPUT):
+			return False
+
+		return True
 	
 	def get_graph_item(self):
 		return self._graph_item

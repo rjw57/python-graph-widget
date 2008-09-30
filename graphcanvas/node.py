@@ -286,6 +286,13 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 	
 	def _on_pad_gadget_button_press(self, item, target, event):
 		if(event.button == 1): # left button
+			# check target is an output pad
+			pad_model = target.get_pad_model()
+
+			if((pad_model == None) or
+				(pad_model.get_property('type') != padgadget.OUTPUT)):
+				return
+
 			root_item = self.get_canvas().get_root_item()
 			pad_anchor = target.get_pad_anchor()
 		   	event_point = self.get_canvas().\
@@ -313,6 +320,9 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		return True
 
 	def _on_pad_gadget_button_release(self, item, target, event):
+		if(not self._dragging_pad_gadget):
+			return
+
 		canvas = item.get_canvas ()
 		canvas.pointer_ungrab(item, event.time)
 		self._dragging_pad_gadget = False
