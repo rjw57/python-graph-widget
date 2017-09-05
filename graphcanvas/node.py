@@ -165,11 +165,11 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		content_rect = self._background_rect.get_content_area_bounds()
 		self._pad_table.set_property('width', -1)
 		self._pad_table.set_property('height', -1)
-		self._pad_table.update(entire_tree, cr, goocanvas.Bounds())
+		self._pad_table.update(entire_tree, cr)
 
 		## get the requested bounds of the pad table
 		pad_req = goocanvas.Bounds()
-		self._pad_table.get_requested_area(cr, pad_req)
+		self._pad_table.get_requested_area(cr)
 
 		## and hence the minimum comfortable size of the node
 		comfortable_bounds = self._background_rect. \
@@ -223,7 +223,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 			child = self.get_child(child_idx)
 			child.set_simple_transform( self._node_data['x'],
 				self._node_data['y'], 1.0, 0.0 )
-			child.update(entire_tree, cr, goocanvas.Bounds())
+			child.update(entire_tree, cr)
 
 		## get the bounds of the content area
 		content_rect = self._background_rect.get_content_area_bounds()
@@ -233,7 +233,7 @@ class NodeItem(goocanvas.Group, simple.SimpleItem, goocanvas.Item):
 		self._pad_table.translate(-1, content_rect.y1 + vertical_padding)
 		self._pad_table.set_property('width', self._node_data['width']+2)
 		self._pad_table.set_property('height', content_rect.y2 - content_rect.y1)
-		self._pad_table.update(entire_tree, cr, goocanvas.Bounds())
+		self._pad_table.update(entire_tree, cr)
 
 		## now update each pad gadget's anchor location if there is
 		## a parent graph item
